@@ -66,33 +66,31 @@ def trajectory_generator(
     Returns:
       tuple of trajectory
     """
-    total_time = num_reference_configs * 0.01  # [s]
+    # num_reference_configs (k) is the number of reference configurations per 0.01 seconds
+    # so if you want your controller to run at 1000 Hz, k = 10, freq = k / 0.01
+    # The total trajectory configurations will be
+    # total_trajectory_time * (num_reference_configs / 0.01)
     # Each trajectory has a time segment alloted to it and
     # the sum of the segments should equal the total time
-    traj_1_time = 0.2 * total_time  # Initial -> Pick_Standoff
-    traj_2_time = 0.05 * total_time  # Pick_Standoff -> Cube_Initial
-    traj_3_time = 0.05 * total_time  # Cube_Initial -> Gripper Closed
-    traj_4_time = 0.2 * total_time  # Gripper Closed -> Pick_Standoff
-    traj_5_time = 0.2 * total_time  # Pick_Standoff -> Place_Standoff
-    traj_6_time = 0.05 * total_time  # Place_Standoff -> Cube_Final
-    traj_7_time = 0.05 * total_time  # Cube_Final -> Gripper Open
-    traj_8_time = 0.2 * total_time  # Gripper Open -> Place_Standoff
+    total_time = 10  # [s]
+    traj_1_time = 0.24 * total_time  # Initial -> Pick_Standoff
+    traj_2_time = 0.01 * total_time  # Pick_Standoff -> Cube_Initial
+    traj_3_time = 0.01 * total_time  # Cube_Initial -> Gripper Closed
+    traj_4_time = 0.24 * total_time  # Gripper Closed -> Pick_Standoff
+    traj_5_time = 0.24 * total_time  # Pick_Standoff -> Place_Standoff
+    traj_6_time = 0.01 * total_time  # Place_Standoff -> Cube_Final
+    traj_7_time = 0.01 * total_time  # Cube_Final -> Gripper Open
+    traj_8_time = 0.24 * total_time  # Gripper Open -> Place_Standoff
     trajectory_time = np.array([
         traj_1_time, traj_2_time, traj_3_time, traj_4_time,
         traj_5_time, traj_6_time, traj_7_time, traj_8_time
     ])
-    # traj_time = total_time / 8
     assert trajectory_time.sum() == total_time, f'Trajectory time does not sum to total time: {
         trajectory_time.sum()} != {total_time}'
     # steps per trajectory segment
-    # traj_steps = np.array([
-    #     int((t / total_time) * num_reference_configs) for t in trajectory_time
-    # ])
-    # assert traj_steps.sum() == num_reference_configs, f'Trajectory steps does not sum to total steps: {
-    #     traj_steps.sum()} != {num_reference_configs}'
-    traj_steps = num_reference_configs // 8
+    traj_steps = int(total_time * num_reference_configs / 0.01)
     print(
-        f'Generating Trajectory with {num_reference_configs} reference configurations ' +
+        f'Generating Trajectory using a controller frequency of {num_reference_configs / 0.01} Hz, ' +
         f'with {traj_steps} steps per segment and ' +
         f'{total_time} total seconds:\n' +
         '\n'.join([f'\tSegment {i+1}: {t} [s]' for i,
@@ -108,7 +106,7 @@ def trajectory_generator(
     # Trajectory 1: Initial -> Pick_Standoff (Screw Trajectory)
     gripper_states.extend([0] * traj_steps)
     traj_1 = mr.ScrewTrajectory(
-        ee_initial_config, pick_standoff_config, traj_1_time, traj_steps, method=3
+        ee_initial_config, pick_standoff_config, trajectory_time[0], traj_steps, method=3
     )
     print(
         f'Trajectory 1: Initial -> Standoff\n{np.round(traj_1, 2)}'
@@ -116,7 +114,7 @@ def trajectory_generator(
     # Trajectory 2: Pick_Standoff -> Cube_Initial (Cartesian Trajectory)
     gripper_states.extend([0] * traj_steps)
     traj_2 = mr.CartesianTrajectory(
-        pick_standoff_config, pick_grasp_config, traj_2_time, traj_steps, method=3
+        pick_standoff_config, pick_grasp_config, trajectory_time[1], traj_steps, method=3
     )
     print(
         f'Trajectory 2: Standoff -> Grasp\n{traj_2}'
@@ -124,7 +122,7 @@ def trajectory_generator(
     # Trajectory 3: Cube_Initial -> Gripper Closed
     gripper_states.extend([1] * traj_steps)
     traj_3 = mr.ScrewTrajectory(
-        pick_grasp_config, pick_grasp_config, traj_3_time, traj_steps, method=3
+        pick_grasp_config, pick_grasp_config, trajectory_time[2], traj_steps, method=3
     )
     print(
         f'Trajectory 3: Grasp -> Gripper Closed\n{np.round(traj_3, 2)}'
@@ -132,7 +130,7 @@ def trajectory_generator(
     # Trajectory 4: Gripper Closed -> Pick_Standoff (Cartesian Trajectory)
     gripper_states.extend([1] * traj_steps)
     traj_4 = mr.CartesianTrajectory(
-        pick_grasp_config, pick_standoff_config, traj_4_time, traj_steps, method=3
+        pick_grasp_config, pick_standoff_config, trajectory_time[3], traj_steps, method=3
     )
     print(
         f'Trajectory 4: Gripper Closed -> Standoff\n{np.round(traj_4, 2)}'
@@ -140,7 +138,7 @@ def trajectory_generator(
     # Trajectory 5: Pick_Standoff -> Place_Standoff (Screw Trajectory)
     gripper_states.extend([1] * traj_steps)
     traj_5 = mr.ScrewTrajectory(
-        pick_standoff_config, place_standoff_config, traj_5_time, traj_steps, method=3
+        pick_standoff_config, place_standoff_config, trajectory_time[4], traj_steps, method=3
     )
     print(
         f'Trajectory 5: Standoff -> Place Standoff\n{np.round(traj_5, 2)}'
@@ -148,14 +146,14 @@ def trajectory_generator(
     # Trajectory 6: Place_Standoff -> Cube_Final (Cartesian Trajectory)
     gripper_states.extend([1] * traj_steps)
     traj_6 = mr.CartesianTrajectory(
-        place_standoff_config, place_grasp_config, traj_6_time, traj_steps, method=3
+        place_standoff_config, place_grasp_config, trajectory_time[5], traj_steps, method=3
     )
     print(
         f'Trajectory 6: Place Standoff -> Final\n{np.round(traj_6, 2)}') if debug else None
     # Trajectory 7: Cube_Final -> Gripper Open
     gripper_states.extend([0] * traj_steps)
     traj_7 = mr.ScrewTrajectory(
-        place_grasp_config, place_grasp_config, traj_7_time, traj_steps, method=3
+        place_grasp_config, place_grasp_config, trajectory_time[6], traj_steps, method=3
     )
     print(
         f'Trajectory 7: Final -> Gripper Open\n{traj_7}'
@@ -163,7 +161,7 @@ def trajectory_generator(
     # Trajectory 8: Gripper Open -> Place_Standoff
     gripper_states.extend([0] * traj_steps)
     traj_8 = mr.CartesianTrajectory(
-        place_grasp_config, place_standoff_config, traj_8_time, traj_steps, method=3
+        place_grasp_config, place_standoff_config, trajectory_time[7], traj_steps, method=3
     )
     print(
         f'Trajectory 8: Gripper Open -> Place Standoff\n{np.round(traj_8, 2)}'
@@ -222,7 +220,7 @@ trajectory, gripper_states = trajectory_generator(
     cube_final_config,
     ee_grasping_config,
     standoff_config,
-    num_reference_configs=1024,
+    num_reference_configs=1,
     debug=False
 )
 
@@ -233,6 +231,3 @@ sim_state = traj_to_sim_state(
     write_to_file=True,
     filename='trajectory.csv'
 )
-
-assert sim_state.shape == (1024, 13), f'Invalid simulation state shape {
-    sim_state.shape}'
