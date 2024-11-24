@@ -2,16 +2,21 @@ import modern_robotics as mr
 import numpy as np
 
 
-def traj_to_sim_state(trajectory, gripper_states, write_to_file=False, filename='trajectory.csv'):
-    # Trajectory shape: (num_reference_configs, 4, 4)
-    # Trajectory is a list of 4x4 transformation matrices that
-    # represent the end-effector's configuration at each reference configuration
-    # gripper_states shape: (num_reference_configs) where each element is a binary value [0, 1]
-    # We need to convert that data into the following format:
-    # r11, r12, r13, r21, r22, r23, r31, r32, r33, px, py, pz, gripper state
-    # where rij are the elements of the rotation matrix within the 4x4 transformation matrix
-    # and px, py, pz are the position elements of the 4x4 transformation matrix
-    # gripper state is a binary value representing the state of the gripper (0 = open, 1 = closed)
+def traj_to_sim_state(trajectory, gripper_states, write_to_file=False, filename='trajectory.csv') -> np.ndarray:
+    """
+    Convert a trajectory and gripper states to a simulation state that can be used to
+    visualize the trajectory in CoppeliaSim.
+
+    Args:
+        trajectory (list): A list of 4x4 transformation matrices representing the end-effector's configuration
+        gripper_states (list): A list of binary values representing the state of the gripper (0 = open, 1 = closed)
+        write_to_file (bool, optional): If True, write the simulation state to a file. Defaults to False.
+        filename (str, optional): The filename to write to. Defaults to 'trajectory.csv'.
+
+    Returns:
+        list: A list of simulation states where each state is a 13-dimensional vector:
+            [r11, r12, r13, r21, r22, r23, r31, r32, r33, px, py, pz, gripper state]
+    """
     sim_state = []
     for i, config in enumerate(trajectory):
         r = config[:3, :3]
@@ -22,8 +27,8 @@ def traj_to_sim_state(trajectory, gripper_states, write_to_file=False, filename=
     assert sim_state.shape == (
         len(trajectory), 13), f'Invalid simulation state shape {sim_state.shape}'
     if write_to_file:
-        np.savetxt(filename, sim_state, delimiter=',')
-        print(f'Successfully wrote simulation state to {filename}')
+        np.savetxt(f'data/{filename}', sim_state, delimiter=',')
+        print(f'Successfully wrote simulation state to data/{filename}')
     return sim_state
 
 
