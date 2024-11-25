@@ -1,5 +1,9 @@
 import modern_robotics as mr
 import numpy as np
+import os
+
+# Run this python file using:
+# python3 trajectory_generator.py
 
 
 def traj_to_sim_state(trajectory, gripper_states, write_to_file=False, filename='trajectory.csv') -> np.ndarray:
@@ -27,6 +31,10 @@ def traj_to_sim_state(trajectory, gripper_states, write_to_file=False, filename=
     assert sim_state.shape == (
         len(trajectory), 13), f'Invalid simulation state shape {sim_state.shape}'
     if write_to_file:
+        # if data dir doesn't exist, create it
+        if not os.path.exists('data'):
+            os.makedirs('data')
+            print('Created data directory')
         np.savetxt(f'data/{filename}', sim_state, delimiter=',')
         print(f'Successfully wrote simulation state to data/{filename}')
     return sim_state
@@ -214,20 +222,25 @@ ee_grasping_config = np.array([
 ])
 
 
-trajectory, gripper_states = trajectory_generator(
-    ee_initial_config,
-    cube_initial_config,
-    cube_final_config,
-    ee_grasping_config,
-    standoff_config,
-    num_reference_configs=1,
-    debug=False
-)
+def main():
+    trajectory, gripper_states = trajectory_generator(
+        ee_initial_config,
+        cube_initial_config,
+        cube_final_config,
+        ee_grasping_config,
+        standoff_config,
+        num_reference_configs=1,
+        debug=False
+    )
 
-# Convert trajectory to simulation state
-sim_state = traj_to_sim_state(
-    trajectory,
-    gripper_states,
-    write_to_file=True,
-    filename='trajectory.csv'
-)
+    # Convert trajectory to simulation state
+    sim_state = traj_to_sim_state(
+        trajectory,
+        gripper_states,
+        write_to_file=True,
+        filename='trajectory.csv'
+    )
+
+
+if __name__ == '__main__':
+    main()
