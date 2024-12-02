@@ -48,3 +48,22 @@ def next_state(
         [new_chassis_config, new_arm_config, new_wheel_config]
     )
     return new_robot_state
+
+
+def simulate(
+        initial_robot_state,
+        constant_arm_speed,
+        constant_wheel_speed,
+        total_time
+):
+    dt = total_time // 100
+    state = initial_robot_state
+    states = [state]
+    for t in range(dt):
+        state = next_state(
+            state,
+            np.concatenate([constant_arm_speed, constant_wheel_speed]),
+            dt
+        )
+        states.append(state)
+    return states
