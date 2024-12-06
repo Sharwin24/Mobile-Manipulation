@@ -17,9 +17,9 @@ def odometry(chassis_config, delta_wheel_config):
     dt = 1  # Use actual timestep between wheel displacements for non-constant speeds
     theta_dot = delta_wheel_config / dt
     V_b = RC.F @ theta_dot
-    V_b6 = np.array(0, 0, *V_b, 0)
     # Integrate to get the displacement: T_bb' = exp(V_b6)
-    T_bb_prime = mr.MatrixExp6(V_b6)
+    # V_b6 = np.array([0, 0, *V_b, 0])
+    # T_bb_prime = mr.MatrixExp6(V_b6)
     # If w_bz = 0, then delta_q_b = [0,v_bx,v_by]
     # Otherwise, delta_q_b = [w_bz, ...,...]
     w_bz = V_b[0]
@@ -85,7 +85,7 @@ def next_state(
 
     new_chassis_config = odometry(
         chassis_config=chassis_config,
-        delta_wheel_config=np.subtract(new_wheel_config - wheel_config)
+        delta_wheel_config=new_wheel_config - wheel_config
     )
 
     new_robot_state = np.concatenate(
@@ -101,10 +101,10 @@ def simulate(
         total_time,
         dt=0.01
 ):
-    N = total_time // dt
+    N = int(total_time / dt)
     print(f'Simulating for {total_time} seconds with {N} steps (dt={dt})')
     states = [initial_robot_state]
-    for t in range(dt):
+    for t in range(N):
         current_state = states[-1]  # Latest state
         new_state = next_state(
             current_state,
@@ -112,7 +112,7 @@ def simulate(
             dt
         )
         states.append(new_state)
-        print(f'Step {t+1}/{N}') if t % 100 == 0 else None
+        # print(f'Step {t}/{N}') if t % 100 == 0 else None
     print(
         f'Finished simulation with {len(states)} states'
     )
@@ -145,12 +145,6 @@ def plot_states(states):
     # Plot the orientation of the chassis as an arrow
     plt.figure()
     plt.plot(x, y)
-    for i in range(0, len(x), 100):
-        plt.arrow(
-            x[i], y[i],
-            0.1 * np.cos(phi[i]), 0.1 * np.sin(phi[i]),
-            head_width=0.05, head_length=0.1, fc='r', ec='r'
-        )
     plt.title('Chassis Trajectory')
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
