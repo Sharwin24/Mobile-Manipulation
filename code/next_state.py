@@ -11,7 +11,6 @@ def odometry(chassis_config, delta_wheel_config):
 
     # Get configs
     x, y, phi = chassis_config
-
     # delta_theta is the difference in wheel angles
     # Since we are assuming constant wheel speeds, dt = 1
     dt = 1  # Use actual timestep between wheel displacements for non-constant speeds
@@ -21,7 +20,7 @@ def odometry(chassis_config, delta_wheel_config):
     # where k is the frame after the motion between the timestep
     V_b6 = np.array([0, 0, *V_b, 0])
     T_bk = mr.MatrixExp6(mr.VecTose3(V_b6))
-    T_sk = RC.T_sb(x=x, y=y, phi=phi) @ T_bk
+    T_sk = RC.T_sb(x, y, phi) @ T_bk
     # q_k is the new chassis config
     # q_k= x, y, phi
     new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
@@ -78,8 +77,8 @@ def next_state(
     chassis_config = robot_state[:3]  # x, y, theta
     arm_config = robot_state[3:8]
     wheel_config = robot_state[8:]
-    wheel_speeds = robot_speeds[:4]
-    arm_speeds = robot_speeds[4:]
+    arm_speeds = robot_speeds[:5]
+    wheel_speeds = robot_speeds[5:]
 
     # limit the speeds to the max allowed (negative and positive)
     if max_wheel_motor_speed:

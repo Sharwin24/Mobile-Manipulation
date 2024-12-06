@@ -25,7 +25,7 @@ class RobotConstants:
         [0, 0, 0, 1]
     ])
 
-    def T_sb(x: float, y: float, phi: float) -> np.array:
+    def T_sb(self, x: float, y: float, phi: float) -> np.array:
         """
         Transformation matrix from the space frame to the base frame.
 
