@@ -105,7 +105,7 @@ def simulate(
     return states
 
 
-def plot_states(states):
+def plot_states(states, sim_id):
     # Plots the output of simulate
     # states is a list of robot states
     # where each robot state is a 12x1 vector
@@ -135,7 +135,7 @@ def plot_states(states):
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.grid()
-    plt.savefig('results/chassis_trajectory.png')
+    plt.savefig(f'results/sim{sim_id}/chassis_trajectory.png')
 
     # Plot the arm joint angles
     plt.figure()
@@ -148,7 +148,7 @@ def plot_states(states):
     plt.xlabel('Time Step')
     plt.ylabel('Angle [rad]')
     plt.legend()
-    plt.savefig('results/arm_joint_angles.png')
+    plt.savefig(f'results/sim{sim_id}/arm_joint_angles.png')
 
     # Plot the wheel angles
     plt.figure()
@@ -160,7 +160,7 @@ def plot_states(states):
     plt.xlabel('Time Step')
     plt.ylabel('Angle [rad]')
     plt.legend()
-    plt.savefig('results/wheel_angles.png')
+    plt.savefig(f'results/sim{sim_id}/wheel_angles.png')
 
 
 def run_simulation(robot_initial_state, arm_speeds, wheel_speeds, total_time, sim_id):
@@ -175,7 +175,7 @@ def run_simulation(robot_initial_state, arm_speeds, wheel_speeds, total_time, si
         f'SIM {sim_id}: {
             np.round(robot_initial_state[:3], 3)} -> {np.round(final_state[:3], 3)}'
     )
-    # plot_states(states)
+    plot_states(states, sim_id)
 
 
 def main():
