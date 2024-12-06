@@ -17,30 +17,41 @@ def odometry(chassis_config, delta_wheel_config):
     dt = 1  # Use actual timestep between wheel displacements for non-constant speeds
     theta_dot = delta_wheel_config / dt
     V_b = RC.F @ theta_dot
-    # Integrate to get the displacement: T_bb' = exp(V_b6)
-    # V_b6 = np.array([0, 0, *V_b, 0])
-    # T_bb_prime = mr.MatrixExp6(V_b6)
+    # Integrate to get the displacement: T_bk = exp(V_b6)
+    # where k is the frame after the motion between the timestep
+    V_b6 = np.array([0, 0, *V_b, 0])
+    T_bk = mr.MatrixExp6(mr.VecTose3(V_b6))
+    T_sk = RC.T_sb(x=x, y=y, phi=phi) @ T_bk
+    # q_k is the new chassis config
+    # q_k= x, y, phi
+    new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
+    new_chassis_config = np.array([
+        T_sk[0, 3],
+        T_sk[1, 3],
+        new_phi
+    ])
+    return new_chassis_config
     # If w_bz = 0, then delta_q_b = [0,v_bx,v_by]
     # Otherwise, delta_q_b = [w_bz, ...,...]
-    w_bz = V_b[0]
-    v_bx = V_b[1]
-    v_by = V_b[2]
-    if w_bz == 0:
-        delta_q_b = np.array([0, v_bx, v_by])
-    else:
-        delta_q_b = np.array([
-            w_bz,
-            (v_bx*np.sin(w_bz) + v_by*(np.cos(w_bz) - 1)) / w_bz,
-            (v_by*np.sin(w_bz) + v_bx*(1 - np.cos(w_bz))) / w_bz
-        ])
+    # w_bz = V_b[0]
+    # v_bx = V_b[1]
+    # v_by = V_b[2]
+    # if w_bz == 0:
+    #     delta_q_b = np.array([0, v_bx, v_by])
+    # else:
+    #     delta_q_b = np.array([
+    #         w_bz,
+    #         (v_bx*np.sin(w_bz) + v_by*(np.cos(w_bz) - 1)) / w_bz,
+    #         (v_by*np.sin(w_bz) + v_bx*(1 - np.cos(w_bz))) / w_bz
+    #     ])
 
-    delta_q = np.array([
-        [1, 0, 0],
-        [0, np.cos(phi), -np.sin(phi)],
-        [0, np.sin(phi), np.cos(phi)]
-    ]) @ delta_q_b
+    # delta_q = np.array([
+    #     [1, 0, 0],
+    #     [0, np.cos(phi), -np.sin(phi)],
+    #     [0, np.sin(phi), np.cos(phi)]
+    # ]) @ delta_q_b
 
-    return chassis_config + delta_q
+    # return chassis_config + delta_q
 
 
 def next_state(
