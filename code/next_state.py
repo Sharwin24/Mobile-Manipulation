@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import modern_robotics as mr
 from robot_constants import RC
+import os
 
 
 def odometry(chassis_config, delta_wheel_config):
@@ -126,6 +127,9 @@ def plot_states(states, sim_id):
     wheel2 = states[:, 9]
     wheel3 = states[:, 10]
     wheel4 = states[:, 11]
+
+    # Create the directories if they don't exist
+    os.makedirs(f'results/sim{sim_id}', exist_ok=True)
 
     # Plot the trajectory of the robot's chassis
     # Plot the orientation of the chassis as an arrow
