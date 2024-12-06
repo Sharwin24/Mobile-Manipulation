@@ -106,7 +106,7 @@ def simulate(
     return states
 
 
-def plot_states(states, sim_id):
+def plot_states(states, sim_name):
     # Plots the output of simulate
     # states is a list of robot states
     # where each robot state is a 12x1 vector
@@ -129,7 +129,7 @@ def plot_states(states, sim_id):
     wheel4 = states[:, 11]
 
     # Create the directories if they don't exist
-    os.makedirs(f'results/sim{sim_id}', exist_ok=True)
+    os.makedirs(f'results/{sim_name}', exist_ok=True)
 
     # Plot the trajectory of the robot's chassis
     # Plot the orientation of the chassis as an arrow
@@ -139,7 +139,7 @@ def plot_states(states, sim_id):
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.grid()
-    plt.savefig(f'results/sim{sim_id}/chassis_trajectory.png')
+    plt.savefig(f'results/{sim_name}/chassis_trajectory.png')
 
     # Plot the arm joint angles
     plt.figure()
@@ -152,7 +152,7 @@ def plot_states(states, sim_id):
     plt.xlabel('Time Step')
     plt.ylabel('Angle [rad]')
     plt.legend()
-    plt.savefig(f'results/sim{sim_id}/arm_joint_angles.png')
+    plt.savefig(f'results/{sim_name}/arm_joint_angles.png')
 
     # Plot the wheel angles
     plt.figure()
@@ -164,10 +164,10 @@ def plot_states(states, sim_id):
     plt.xlabel('Time Step')
     plt.ylabel('Angle [rad]')
     plt.legend()
-    plt.savefig(f'results/sim{sim_id}/wheel_angles.png')
+    plt.savefig(f'results/{sim_name}/wheel_angles.png')
 
 
-def run_simulation(robot_initial_state, arm_speeds, wheel_speeds, total_time, sim_id):
+def run_simulation(robot_initial_state, arm_speeds, wheel_speeds, total_time, sim_name):
     states = simulate(
         initial_robot_state=robot_initial_state,
         arm_speeds=arm_speeds,
@@ -176,16 +176,17 @@ def run_simulation(robot_initial_state, arm_speeds, wheel_speeds, total_time, si
     )
     final_state = states[-1]
     print(
-        f'SIM {sim_id}: {
+        f'{sim_name}: {
             np.round(robot_initial_state[:3], 3)} -> {np.round(final_state[:3], 3)}'
     )
-    plot_states(states, sim_id)
+    plot_states(states, sim_name)
 
 
 def main():
     robot_initial_state = np.array([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ])
+    sim_names = ['straight', 'sideways', 'spin']
     wheel_speeds = np.array([
         [10, 10, 10, 10],
         [-10, 10, -10, 10],
@@ -195,13 +196,13 @@ def main():
     arm_speeds = np.array([
         [0, 0, 0, 0, 0] for _ in range(len(wheel_speeds))
     ])
-    for i, (arm_speed, wheel_speed) in enumerate(zip(arm_speeds, wheel_speeds)):
+    for sim_name, arm_speed, wheel_speed in zip(sim_names, arm_speeds, wheel_speeds):
         run_simulation(
             robot_initial_state=robot_initial_state,
             arm_speeds=arm_speed,
             wheel_speeds=wheel_speed,
             total_time=1,
-            sim_id=i
+            sim_name=sim_name
         )
 
 
