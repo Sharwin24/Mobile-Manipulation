@@ -6,8 +6,7 @@ from robot_constants import RC
 
 def odometry(chassis_config, delta_wheel_config):
     # The function Odometry is based on the equations in Chapter 13.4
-    # It computes the new chassis configuration based on the old configuration, wheel speeds, and timestep
-    # The output is a new chassis configuration
+    # It computes the new chassis configuration based on the old configuration and the change in wheel angles
 
     # Get configs
     x, y, phi = chassis_config
@@ -15,14 +14,12 @@ def odometry(chassis_config, delta_wheel_config):
     # Since we are assuming constant wheel speeds, dt = 1
     dt = 1  # Use actual timestep between wheel displacements for non-constant speeds
     theta_dot = delta_wheel_config / dt
+    # Calculate the Body twist using the pinv(H0) and theta_dot
     V_b = RC.F @ theta_dot
-    # Integrate to get the displacement: T_bk = exp(V_b6)
-    # where k is the frame after the motion between the timestep
+    # Integrate to get the displacement: T_bk = exp([V_b6])
     V_b6 = np.array([0, 0, *V_b, 0])
     T_bk = mr.MatrixExp6(mr.VecTose3(V_b6))
     T_sk = RC.T_sb(x, y, phi) @ T_bk
-    # q_k is the new chassis config
-    # q_k= x, y, phi
     new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
     new_chassis_config = np.array([
         T_sk[0, 3],
@@ -30,27 +27,6 @@ def odometry(chassis_config, delta_wheel_config):
         new_phi
     ])
     return new_chassis_config
-    # If w_bz = 0, then delta_q_b = [0,v_bx,v_by]
-    # Otherwise, delta_q_b = [w_bz, ...,...]
-    # w_bz = V_b[0]
-    # v_bx = V_b[1]
-    # v_by = V_b[2]
-    # if w_bz == 0:
-    #     delta_q_b = np.array([0, v_bx, v_by])
-    # else:
-    #     delta_q_b = np.array([
-    #         w_bz,
-    #         (v_bx*np.sin(w_bz) + v_by*(np.cos(w_bz) - 1)) / w_bz,
-    #         (v_by*np.sin(w_bz) + v_bx*(1 - np.cos(w_bz))) / w_bz
-    #     ])
-
-    # delta_q = np.array([
-    #     [1, 0, 0],
-    #     [0, np.cos(phi), -np.sin(phi)],
-    #     [0, np.sin(phi), np.cos(phi)]
-    # ]) @ delta_q_b
-
-    # return chassis_config + delta_q
 
 
 def next_state(
@@ -187,26 +163,42 @@ def plot_states(states):
     plt.savefig('results/wheel_angles.png')
 
 
-def main():
-    initial_robot_configuration = np.array([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    ])
-
-    def rad_s(rpm):
-        return (rpm * 2 * np.pi) / 60  # rad/s
-    arm_speeds = np.array([0, 0, 0, 0, 0])  # rad/s
-    wheel_rpm = 30
-    wheel_speeds = np.array(
-        [rad_s(wheel_rpm), rad_s(wheel_rpm),
-         rad_s(wheel_rpm), rad_s(wheel_rpm)]
-    )
+def run_simulation(robot_initial_state, arm_speeds, wheel_speeds, total_time, sim_id):
     states = simulate(
-        initial_robot_state=initial_robot_configuration,
+        initial_robot_state=robot_initial_state,
         arm_speeds=arm_speeds,
         wheel_speeds=wheel_speeds,
-        total_time=10
+        total_time=total_time
     )
-    plot_states(states)
+    final_state = states[-1]
+    print(
+        f'SIM {sim_id}: {
+            np.round(robot_initial_state[:3], 3)} -> {np.round(final_state[:3], 3)}'
+    )
+    # plot_states(states)
+
+
+def main():
+    robot_initial_state = np.array([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ])
+    wheel_speeds = np.array([
+        [10, 10, 10, 10],
+        [-10, 10, -10, 10],
+        [-10, 10, 10, -10],
+    ])
+    # Arm speeds are 5 zeros with the same length as wheel_speeds
+    arm_speeds = np.array([
+        [0, 0, 0, 0, 0] for _ in range(len(wheel_speeds))
+    ])
+    for i, (arm_speed, wheel_speed) in enumerate(zip(arm_speeds, wheel_speeds)):
+        run_simulation(
+            robot_initial_state=robot_initial_state,
+            arm_speeds=arm_speed,
+            wheel_speeds=wheel_speed,
+            total_time=1,
+            sim_id=i
+        )
 
 
 if __name__ == '__main__':
