@@ -143,10 +143,3 @@ class RobotConstants:
 
 # Global Instance
 RC = RobotConstants()
-
-# print(
-#     np.round(RC.Je(
-#         arm_thetas=np.array([0, 0, 0.2, -1.6, 0]),
-#         wheel_angles=np.array([0, 0, 0, 0])
-#     ), 3)
-# )

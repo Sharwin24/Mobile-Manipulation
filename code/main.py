@@ -41,10 +41,10 @@ initial_arm_config = np.array([0, 0, 0.2, -1.6, 0])
 # Wheel Config: [thetaL1, thetaL2, thetaR1, thetaR2]
 initial_wheel_config = np.array([0, 0, 0, 0])
 # Gripper state: [0] for open, [1] for closed
-initial_gripper_state = np.array([0])
+initial_gripper_state = 0
 initial_robot_state = np.concatenate(
     [initial_chassis_config, initial_arm_config,
-     initial_wheel_config, initial_gripper_state]
+     initial_wheel_config, [initial_gripper_state]]
 )
 
 
@@ -96,10 +96,14 @@ def plot_error(errors):
     plt.plot(errors[:, 5], label='v_z')
     plt.legend()
     plt.title('Error Over Time')
-    plt.xlabel('Time Step [s]')
+    plt.xlabel('Sim Steps')
     plt.ylabel('Error')
     plt.grid()
     plt.savefig('results/error_over_time.png')
+
+
+def rpm2rads(rpm):
+    return rpm * 2 * np.pi / 60
 
 
 def main():
@@ -143,8 +147,8 @@ def main():
             robot_state=robot_states[-1],
             robot_speeds=robot_speeds,
             dt=0.01,
-            max_wheel_motor_speed=0.5,
-            max_arm_motor_speed=0.5
+            max_wheel_motor_speed=rpm2rads(70),  # [rad/s]
+            max_arm_motor_speed=rpm2rads(40)  # [rad/s]
         )
         # Add the gripper state to the new state
         gripper_state = sim_traj[i][-1]
