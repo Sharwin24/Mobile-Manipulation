@@ -123,42 +123,43 @@ def plot_robot_states(states):
     wheel3 = states[:, 10]
     wheel4 = states[:, 11]
 
+    # Create a single figure with three subplots
+    fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+
     # Plot the trajectory of the robot's chassis
-    # Plot the orientation of the chassis as an arrow
-    plt.figure()
-    plt.plot(x, y)
-    plt.plot(x[0], y[0], 'ro', label='Start')
-    plt.plot(x[-1], y[-1], 'go', label='End')
-    plt.title('Chassis Trajectory')
-    plt.xlabel('x [m]')
-    plt.ylabel('y [m]')
-    plt.grid()
-    plt.savefig(f'results/chassis_trajectory.png')
+    axs[0].plot(x, y)
+    axs[0].plot(x[0], y[0], 'go', label='Start')
+    axs[0].plot(x[-1], y[-1], 'ro', label='End')
+    axs[0].set_title('Chassis Trajectory')
+    axs[0].set_xlabel('x [m]')
+    axs[0].set_ylabel('y [m]')
+    axs[0].legend()
+    axs[0].grid()
 
     # Plot the arm joint angles
-    plt.figure()
-    plt.plot(theta1, label='Joint 1')
-    plt.plot(theta2, label='Joint 2')
-    plt.plot(theta3, label='Joint 3')
-    plt.plot(theta4, label='Joint 4')
-    plt.plot(theta5, label='Joint 5')
-    plt.title('Arm Joint Angles')
-    plt.xlabel('Time Step')
-    plt.ylabel('Angle [rad]')
-    plt.legend()
-    plt.savefig(f'results/arm_joint_angles.png')
+    axs[1].plot(theta1, label='Joint 1')
+    axs[1].plot(theta2, label='Joint 2')
+    axs[1].plot(theta3, label='Joint 3')
+    axs[1].plot(theta4, label='Joint 4')
+    axs[1].plot(theta5, label='Joint 5')
+    axs[1].set_title('Arm Joint Angles')
+    axs[1].set_xlabel('Time Step')
+    axs[1].set_ylabel('Angle [rad]')
+    axs[1].legend()
 
     # Plot the wheel angles
-    plt.figure()
-    plt.plot(wheel1, label='Wheel 1')
-    plt.plot(wheel2, label='Wheel 2')
-    plt.plot(wheel3, label='Wheel 3')
-    plt.plot(wheel4, label='Wheel 4')
-    plt.title('Wheel Angles')
-    plt.xlabel('Time Step')
-    plt.ylabel('Angle [rad]')
-    plt.legend()
-    plt.savefig(f'results/wheel_angles.png')
+    axs[2].plot(wheel1, label='Wheel 1')
+    axs[2].plot(wheel2, label='Wheel 2')
+    axs[2].plot(wheel3, label='Wheel 3')
+    axs[2].plot(wheel4, label='Wheel 4')
+    axs[2].set_title('Wheel Angles')
+    axs[2].set_xlabel('Time Step')
+    axs[2].set_ylabel('Angle [rad]')
+    axs[2].legend()
+
+    # Adjust layout and save the figure
+    plt.tight_layout()
+    plt.savefig('results/robot_states.png')
 
 
 def main():
@@ -168,6 +169,8 @@ def main():
     N = len(sim_traj)
     robot_states = [initial_robot_state]
     errors = []
+    Kp = np.eye(6)
+    Ki = np.zeros((6, 6))
     for i in range(N-1):
         # Each time through the loop, you
         # calculate the control law using FeedbackControl and generate th wheel and joint controls using Je
@@ -187,14 +190,7 @@ def main():
         )
         Xd = state_to_transform(sim_traj[i])
         Xd_next = state_to_transform(sim_traj[i+1])
-        V, X_err = feedback_control(
-            X=X,
-            Xd=Xd,
-            Xd_next=Xd_next,
-            Kp=np.eye(6),
-            Ki=np.zeros((6, 6)),
-            dt=0.01
-        )
+        V, X_err = feedback_control(X, Xd, Xd_next, Kp, Ki, dt=0.01)
         errors.append(X_err)
         # robot speeds are 9x1 vector [wheel_speeds, arm_speeds]
         robot_speeds = compute_robot_speeds(V, arm_config)
@@ -202,8 +198,8 @@ def main():
             robot_state=robot_states[-1],
             robot_speeds=robot_speeds,
             dt=0.01,
-            max_wheel_motor_speed=30.0,  # [rad/s]
-            max_arm_motor_speed=15.0  # [rad/s]
+            max_wheel_motor_speed=40.0,  # [rad/s]
+            max_arm_motor_speed=40.0  # [rad/s]
         )
         # Add the gripper state to the new state
         gripper_state = sim_traj[i][-1]

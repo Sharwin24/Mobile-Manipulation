@@ -21,8 +21,8 @@ def odometry(chassis_config, delta_wheel_config):
     V_b6 = np.array([0, 0, *V_b, 0])
     T_bk = mr.MatrixExp6(mr.VecTose3(V_b6))
     T_sk = RC.T_sb(phi, x, y) @ T_bk
-    # new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
-    new_phi = np.arccos(T_sk[0, 0])
+    new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
+    # new_phi = np.arccos(T_sk[0, 0])
     new_chassis_config = np.array([
         new_phi,
         T_sk[0, 3],

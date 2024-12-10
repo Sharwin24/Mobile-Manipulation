@@ -138,7 +138,7 @@ class RobotConstants:
         return mr.FKinBody(self.M, self.B, arm_thetas)
 
     def T_se(self, phi: float, x: float, y: float, arm_thetas: np.array) -> np.array:
-        return self.T_sb(x, y, phi) @ self.T_b0 @ self.T_0e(arm_thetas)
+        return self.T_sb(phi, x, y) @ self.T_b0 @ self.T_0e(arm_thetas)
 
 
 # Global Instance
