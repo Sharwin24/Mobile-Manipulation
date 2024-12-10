@@ -10,7 +10,7 @@ def odometry(chassis_config, delta_wheel_config):
     # It computes the new chassis configuration based on the old configuration and the change in wheel angles
 
     # Get configs
-    x, y, phi = chassis_config
+    phi, x, y = chassis_config
     # delta_theta is the difference in wheel angles
     # Since we are assuming constant wheel speeds, dt = 1
     dt = 1  # Use actual timestep between wheel displacements for non-constant speeds
@@ -20,7 +20,7 @@ def odometry(chassis_config, delta_wheel_config):
     # Integrate to get the displacement: T_bk = exp([V_b6])
     V_b6 = np.array([0, 0, *V_b, 0])
     T_bk = mr.MatrixExp6(mr.VecTose3(V_b6))
-    T_sk = RC.T_sb(x, y, phi) @ T_bk
+    T_sk = RC.T_sb(phi, x, y) @ T_bk
     new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
     new_chassis_config = np.array([
         T_sk[0, 3],
@@ -37,8 +37,8 @@ def next_state(
         max_arm_motor_speed=None,
         max_wheel_motor_speed=None
 ):
-    # robot_state is a 12x1 vector
-    # 3 for chassis config, 5 for arm, 4 for wheel angles
+    # robot_state is a 13x1 vector
+    # 3 for chassis config, 5 for arm, 4 for wheel angles, 1 for gripper state
     # robot_speeds is a 9x1 vector
     # 4 wheel speeds, 5 arm speeds
     # dt is the timestep
@@ -51,11 +51,11 @@ def next_state(
     # new chassis configuration is obtained from odometry, as described in Chapter 13.4
     # The output is a robot_state vector after the timestep
 
-    chassis_config = robot_state[:3]  # x, y, theta
+    chassis_config = robot_state[:3]  # phi, x, y
     arm_config = robot_state[3:8]
-    wheel_config = robot_state[8:]
-    arm_speeds = robot_speeds[:5]
-    wheel_speeds = robot_speeds[5:]
+    wheel_config = robot_state[8:12]
+    wheel_speeds = robot_speeds[:4]
+    arm_speeds = robot_speeds[4:]
 
     # limit the speeds to the max allowed (negative and positive)
     if max_wheel_motor_speed:

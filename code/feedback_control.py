@@ -3,7 +3,7 @@ import modern_robotics as mr
 from robot_constants import RC
 
 
-def feedback_control(X, Xd, Xd_next, Kp, Ki, dt):
+def feedback_control(X, Xd, Xd_next, Kp, Ki, dt=0.01):
     # Calculate the kinematic task-space feedforward plus feedback control law,
     # written as:
     # V(t) = [Adjoint(inv(X)*Xd)]V_d(t) + Kp*X_err(t) + Ki*integral(X_err(t))
@@ -13,18 +13,23 @@ def feedback_control(X, Xd, Xd_next, Kp, Ki, dt):
     # Kp = The P gain matrix, Ki = The I gain matrix
     # dt = The timestep between reference trajectory configurations
     X_err = mr.se3ToVec(mr.MatrixLog6(mr.TransInv(X) @ Xd))
-    print(f'X_err:\n{np.round(X_err, 3)}')
+    # print(f'X_err:\n{np.round(X_err, 3)}')
     Vd = mr.se3ToVec((1/dt) * mr.MatrixLog6(mr.TransInv(Xd) @ Xd_next))
-    print(f'Vd:\n{np.round(Vd, 3)}')
+    # print(f'Vd:\n{np.round(Vd, 3)}')
     V = mr.Adjoint(mr.TransInv(X) @ Xd) @ Vd + \
         (Kp @ X_err) + (Ki @ (X_err * dt))
-    print(f'V:\n{np.round(V, 3)}')
-    return V
+    # print(f'V:\n{np.round(V, 3)}')
+    return V, X_err
 
 
-def compute_joint_speeds(V, arm_thetas):
-    print(f'Je:\n{np.round(RC.Je(arm_thetas), 3)}')
+def compute_robot_speeds(V, arm_thetas):
+    # print(f'Je:\n{np.round(RC.Je(arm_thetas), 3)}')
+    # returns robot speeds as [wheel_speeds, arm_speeds]
     return np.linalg.pinv(RC.Je(arm_thetas)) @ V
+
+
+def test_joint_limits(joint_positions):
+    pass
 
 
 def main():
@@ -34,7 +39,7 @@ def main():
         x=robot_config[1], y=robot_config[2], phi=robot_config[0],
         arm_thetas=robot_config[3:]
     )
-    twist = feedback_control(
+    twist, error = feedback_control(
         X=X_from_config,
         Xd=np.array([
             [0, 0, 1, 0.5],
@@ -52,7 +57,7 @@ def main():
         Ki=np.zeros((6, 6)),
         dt=0.01
     )
-    robot_speeds = compute_joint_speeds(
+    robot_speeds = compute_robot_speeds(
         V=twist,
         arm_thetas=robot_config[3:]
     )

@@ -6,6 +6,18 @@ import os
 # python3 trajectory_generator.py
 
 
+def state_to_transform(sim_state: np.ndarray) -> np.ndarray:
+    # sim state is a 13-dimensional vector:
+    # [r11, r12, r13, r21, r22, r23, r31, r32, r33, px, py, pz, gripper state]
+    # return the homogeneous transformation matrix T_se
+    return np.array([
+        [sim_state[0], sim_state[1], sim_state[2], sim_state[9]],
+        [sim_state[3], sim_state[4], sim_state[5], sim_state[10]],
+        [sim_state[6], sim_state[7], sim_state[8], sim_state[11]],
+        [0, 0, 0, 1]
+    ])
+
+
 def traj_to_sim_state(trajectory: list, gripper_states: list, write_to_file: bool = False, filename: str = 'trajectory.csv') -> np.ndarray:
     """
     Convert a trajectory and gripper states to a simulation state that can be used to
@@ -72,7 +84,7 @@ def trajectory_generator(
         debug (bool): If True, print debug information
 
     Returns:
-      tuple of trajectory
+      tuple of trajectory (np.ndarray) and gripper_states (list): The reference trajectory and gripper states
     """
     # num_reference_configs (k) is the number of reference configurations per 0.01 seconds
     # so if you want your controller to run at 1000 Hz, k = 10, freq = k / 0.01

@@ -79,6 +79,21 @@ class RobotConstants:
         B5 = np.array([0, 0, 1, 0, 0, 0])
         return np.array([B1, B2, B3, B4, B5]).T
 
+    def robot_config(self, T_se: np.array) -> np.array:
+        # Given a transformation from space frame to the end-effector
+        # return the robot configuration [phi, x, y, theta1, theta2, theta3, theta4, theta5]
+        arm_config = mr.IKinBody(
+            Blist=self.B, M=self.M, T=T_se,
+            thetalist0=np.array([0, 0, 0, 0, 0]),
+            eomg=0.01, ev=0.001
+        )
+        # phi, x, y
+        x = T_se[0, 3]
+        y = T_se[1, 3]
+        phi = np.arctan2(T_se[1, 0], T_se[0, 0])
+        base_config = [phi, x, y]
+        return np.hstack((base_config, arm_config))
+
     def Je(self, arm_thetas: np.array) -> np.array:
         # 6x5 Jacobian Matrix for the arm
         J_arm = mr.JacobianBody(self.B, arm_thetas)
@@ -100,14 +115,14 @@ class RobotConstants:
         Je = np.hstack((J_base, J_arm))
         return Je
 
-    def T_sb(self, x: float, y: float, phi: float) -> np.array:
+    def T_sb(self, phi: float, x: float, y: float) -> np.array:
         """
         Transformation matrix from the space frame to the base frame.
 
         Args:
+            phi (float): angle of the base frame [rad]
             x (float): x-coordinate of the base frame [m]
             y (float): y-coordinate of the base frame [m]
-            phi (float): angle of the base frame [rad]
 
         Returns:
             np.array: 4x4 Transformation matrix from the space frame to the base frame
@@ -122,7 +137,7 @@ class RobotConstants:
     def T_0e(self, arm_thetas: np.array) -> np.array:
         return mr.FKinBody(self.M, self.B, arm_thetas)
 
-    def T_se(self, x: float, y: float, phi: float, arm_thetas: np.array) -> np.array:
+    def T_se(self, phi: float, x: float, y: float, arm_thetas: np.array) -> np.array:
         return self.T_sb(x, y, phi) @ self.T_b0 @ self.T_0e(arm_thetas)
 
 
