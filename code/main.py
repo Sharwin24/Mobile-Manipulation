@@ -67,6 +67,24 @@ def create_trajectory(file: str = 'final_trajectory.csv'):
     return sim_traj
 
 
+def run_simulation(sim_traj):
+    # Loop through reference trajectories generated. If it has N reference configurations, it will have N-1 steps
+    # so the Nth configuration is the reference trajectory Xd, and the N+1th configuration as Xd_next to
+    # calculate the feedforward twist Vd
+
+    # Each time through the loop, you
+    # calculate the control law using FeedbackControl and generate th wheel and joint controls using Je
+    # Send the controls, config, and timestep to next_state to calculate the new configuration
+    # store every kth configuration for later animation (Note that the reference trajectory has k reference configs per 0.01s)
+    # k=1 for simplicity
+    # Store every kth X_err 6-vector, so you can later plot the evolution of the error over time.
+
+    # After the loop, write to a csv file of configurations. If the total time of the motion is 15 seconds, the csv file
+    # should have 1500 (or 1501) lines, corresponding to 0.01s between each config.
+    # Load the CSV file into Scene6 to see the results.
+    pass
+
+
 def main():
     traj = create_trajectory()
 
