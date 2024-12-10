@@ -21,11 +21,12 @@ def odometry(chassis_config, delta_wheel_config):
     V_b6 = np.array([0, 0, *V_b, 0])
     T_bk = mr.MatrixExp6(mr.VecTose3(V_b6))
     T_sk = RC.T_sb(phi, x, y) @ T_bk
-    new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
+    # new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
+    new_phi = np.arccos(T_sk[0, 0])
     new_chassis_config = np.array([
+        new_phi,
         T_sk[0, 3],
-        T_sk[1, 3],
-        new_phi
+        T_sk[1, 3]
     ])
     return new_chassis_config
 
@@ -34,8 +35,8 @@ def next_state(
         robot_state,
         robot_speeds,
         dt,
-        max_arm_motor_speed=None,
-        max_wheel_motor_speed=None
+        max_arm_motor_speed,
+        max_wheel_motor_speed
 ):
     # robot_state is a 13x1 vector
     # 3 for chassis config, 5 for arm, 4 for wheel angles, 1 for gripper state
@@ -58,21 +59,19 @@ def next_state(
     arm_speeds = robot_speeds[4:]
 
     # limit the speeds to the max allowed (negative and positive)
-    if max_wheel_motor_speed:
-        wheel_speeds = np.clip(
-            wheel_speeds, -max_wheel_motor_speed, max_wheel_motor_speed
-        )
-    if max_arm_motor_speed:
-        arm_speeds = np.clip(
-            arm_speeds, -max_arm_motor_speed, max_arm_motor_speed
-        )
+    wheel_speeds = np.clip(
+        wheel_speeds, -max_wheel_motor_speed, max_wheel_motor_speed
+    )
+    arm_speeds = np.clip(
+        arm_speeds, -max_arm_motor_speed, max_arm_motor_speed
+    )
 
-    new_arm_config = arm_config + arm_speeds * dt
-    new_wheel_config = wheel_config + wheel_speeds * dt
+    new_arm_config = arm_config + (arm_speeds * dt)
+    new_wheel_config = wheel_config + (wheel_speeds * dt)
 
     new_chassis_config = odometry(
         chassis_config=chassis_config,
-        delta_wheel_config=new_wheel_config - wheel_config
+        delta_wheel_config=(new_wheel_config - wheel_config)
     )
 
     new_robot_state = np.concatenate(
