@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from robot_constants import RC
 from next_state import next_state
-from trajectory_generator import trajectory_generator, traj_to_sim_state, state_to_transform
+from trajectory_generator import trajectory_generator, traj_to_sim_state, state_to_transform, state_to_transform
 from feedback_control import feedback_control, compute_robot_speeds
 
 # Scene setup
@@ -62,7 +62,7 @@ def pose_to_transformation(x, y, theta):
 def plot_error(errors, sim_name: str):
     # Convert errors to a numpy array
     errors = np.array(errors)
-    
+
     # Create a figure with two subplots
     plt.figure(figsize=(12, 8))
 
@@ -79,9 +79,9 @@ def plot_error(errors, sim_name: str):
     plt.xlabel('Sim Steps')
     plt.ylabel('Error')
     plt.grid()
-    
+
     # Zoomed in graph of error over time
-    zoomed_in_steps = int(len(errors) * 0.05) # Some % of the steps
+    zoomed_in_steps = int(len(errors) * 0.05)  # Some % of the steps
     plt.subplot(2, 1, 2)
     plt.plot(errors[:zoomed_in_steps, 0], label='w_x')
     plt.plot(errors[:zoomed_in_steps, 1], label='w_y')
@@ -94,21 +94,21 @@ def plot_error(errors, sim_name: str):
     plt.xlabel('Sim Steps')
     plt.ylabel('Error')
     plt.grid()
-    
+
     plt.tight_layout()
     plt.savefig(f'results/{sim_name}/error_plot.png')
     print(f'Combined error plot saved to results/{sim_name}/error_plot.png')
-    
+
     # Also save errors to a CSV file
     np.savetxt(f'results/{sim_name}/errors.csv', errors, delimiter=',')
 
 
-
-def plot_robot_states(states, sim_name: str):
+def plot_robot_states(states, reference_states, sim_name: str):
     # Plots the output of simulate
     # states is a list of robot states
     # where each robot state is a 12x1 vector
     # 3 for chassis config, 5 for arm, 4 for wheel angles
+
     # Chassis configs
     states = np.array(states)
     x = states[:, 1]
@@ -125,6 +125,13 @@ def plot_robot_states(states, sim_name: str):
     wheel3 = states[:, 10]
     wheel4 = states[:, 11]
 
+    # Reference T_se transformations
+    reference_states = np.array(
+        [state_to_transform(s) for s in reference_states]
+    )
+    reference_x = reference_states[:, 0, 3]
+    reference_y = reference_states[:, 1, 3]
+
     # Create a single figure with three subplots
     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
 
@@ -132,6 +139,8 @@ def plot_robot_states(states, sim_name: str):
     axs[0].plot(x, y)
     axs[0].plot(x[0], y[0], 'go', label='Start')
     axs[0].plot(x[-1], y[-1], 'ro', label='End')
+    # Also plot the reference trajectory in dashed lines
+    axs[0].plot(reference_x, reference_y, 'k--', label='Reference')
     axs[0].set_title(f'Chassis Trajectory ({sim_name})')
     axs[0].set_xlabel('x [m]')
     axs[0].set_ylabel('y [m]')
@@ -166,8 +175,8 @@ def plot_robot_states(states, sim_name: str):
 
 
 sim_control_params = {
-    "best": {'Kp': np.eye(6) * 10.0, 'Ki': np.eye(6) * 0.08, 'control_type': 'FF+PI'},
-    "overshoot": {'Kp': np.eye(6) * 30.0, 'Ki': np.eye(6) * 0, 'control_type': 'PI'},
+    "best": {'Kp': np.eye(6) * 5.0, 'Ki': np.eye(6) * 0.1, 'control_type': 'FF+PI'},
+    "overshoot": {'Kp': np.eye(6) * 30.0, 'Ki': np.zeros((6, 6)), 'control_type': 'P'},
     "newTask": {'Kp': np.eye(6) * 0.5, 'Ki': np.zeros((6, 6)), 'control_type': 'FF+PI'},
 }
 
@@ -221,7 +230,9 @@ def main(sim_name: str):
         Xd_next = state_to_transform(sim_traj[i+1])
         # Compute feedback control and save the error
         control_type = sim_control_params[sim_name]['control_type']
-        V, X_err = feedback_control(X, Xd, Xd_next, Kp, Ki, control_type, dt=0.01)
+        V, X_err = feedback_control(
+            X, Xd, Xd_next, Kp, Ki, control_type, dt=0.01
+        )
         errors.append(X_err)
         # robot speeds are 9x1 vector [wheel_speeds, arm_speeds]
         robot_speeds = compute_robot_speeds(V, arm_config)
@@ -249,7 +260,7 @@ def main(sim_name: str):
 
     # Plot the error and robot states
     plot_error(errors, sim_name)
-    plot_robot_states(robot_states, sim_name)
+    plot_robot_states(robot_states, sim_traj, sim_name)
 
     # Close the log file
     log_file.close()
