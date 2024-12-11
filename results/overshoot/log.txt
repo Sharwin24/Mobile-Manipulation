@@ -11,5 +11,5 @@ Generating Trajectory using a controller frequency of 100.0 Hz, with 1000 steps 
 Successfully generated trajectory
 Saved trajectory as simulation state to results/overshoot/sim_trajectory.csv
 Finished simulation with 8000 states
-Error plot saved to results/overshoot/error_plot.png
-Robot states plot saved to results/overshootrobot_states.png
+Combined error plot saved to results/overshoot/error_plot.png
+Robot states plot saved to results/overshoot/robot_states.png

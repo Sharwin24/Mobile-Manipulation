@@ -60,10 +60,14 @@ def pose_to_transformation(x, y, theta):
 
 
 def plot_error(errors, sim_name: str):
-    # Plot the error over time
+    # Convert errors to a numpy array
     errors = np.array(errors)
-    # Error is a 6x1 vector [w_x, w_y, w_z, v_x, v_y, v_z]
-    plt.figure()
+    
+    # Create a figure with two subplots
+    plt.figure(figsize=(12, 8))
+
+    # Full graph of error over time
+    plt.subplot(2, 1, 1)
     plt.plot(errors[:, 0], label='w_x')
     plt.plot(errors[:, 1], label='w_y')
     plt.plot(errors[:, 2], label='w_z')
@@ -75,10 +79,29 @@ def plot_error(errors, sim_name: str):
     plt.xlabel('Sim Steps')
     plt.ylabel('Error')
     plt.grid()
+    
+    # Zoomed in graph of error over time
+    zoomed_in_steps = int(len(errors) * 0.05) # Some % of the steps
+    plt.subplot(2, 1, 2)
+    plt.plot(errors[:zoomed_in_steps, 0], label='w_x')
+    plt.plot(errors[:zoomed_in_steps, 1], label='w_y')
+    plt.plot(errors[:zoomed_in_steps, 2], label='w_z')
+    plt.plot(errors[:zoomed_in_steps, 3], label='v_x')
+    plt.plot(errors[:zoomed_in_steps, 4], label='v_y')
+    plt.plot(errors[:zoomed_in_steps, 5], label='v_z')
+    plt.legend()
+    plt.title('Error Over Time (Zoomed In)')
+    plt.xlabel('Sim Steps')
+    plt.ylabel('Error')
+    plt.grid()
+    
+    plt.tight_layout()
     plt.savefig(f'results/{sim_name}/error_plot.png')
-    print(f'Error plot saved to results/{sim_name}/error_plot.png')
-    # Also save errors to a csv file
+    print(f'Combined error plot saved to results/{sim_name}/error_plot.png')
+    
+    # Also save errors to a CSV file
     np.savetxt(f'results/{sim_name}/errors.csv', errors, delimiter=',')
+
 
 
 def plot_robot_states(states, sim_name: str):
@@ -109,7 +132,7 @@ def plot_robot_states(states, sim_name: str):
     axs[0].plot(x, y)
     axs[0].plot(x[0], y[0], 'go', label='Start')
     axs[0].plot(x[-1], y[-1], 'ro', label='End')
-    axs[0].set_title('Chassis Trajectory')
+    axs[0].set_title(f'Chassis Trajectory ({sim_name})')
     axs[0].set_xlabel('x [m]')
     axs[0].set_ylabel('y [m]')
     axs[0].legend()
@@ -121,7 +144,7 @@ def plot_robot_states(states, sim_name: str):
     axs[1].plot(theta3, label='Joint 3')
     axs[1].plot(theta4, label='Joint 4')
     axs[1].plot(theta5, label='Joint 5')
-    axs[1].set_title('Arm Joint Angles')
+    axs[1].set_title(f'Arm Joint Angles ({sim_name})')
     axs[1].set_xlabel('Time Step')
     axs[1].set_ylabel('Angle [rad]')
     axs[1].legend()
@@ -131,7 +154,7 @@ def plot_robot_states(states, sim_name: str):
     axs[2].plot(wheel2, label='Wheel 2')
     axs[2].plot(wheel3, label='Wheel 3')
     axs[2].plot(wheel4, label='Wheel 4')
-    axs[2].set_title('Wheel Angles')
+    axs[2].set_title(f'Wheel Angles ({sim_name})')
     axs[2].set_xlabel('Time Step')
     axs[2].set_ylabel('Angle [rad]')
     axs[2].legend()
@@ -139,13 +162,13 @@ def plot_robot_states(states, sim_name: str):
     # Adjust layout and save the figure
     plt.tight_layout()
     plt.savefig(f'results/{sim_name}/robot_states.png')
-    print(f'Robot states plot saved to results/{sim_name}robot_states.png')
+    print(f'Robot states plot saved to results/{sim_name}/robot_states.png')
 
 
 sim_to_KpKi = {
-    "best": (np.eye(6), np.zeros((6, 6))),
-    "overshoot": (np.eye(6) * 0.5, np.zeros((6, 6))),
-    "newTask": (np.eye(6), np.eye(6) * 0.1)
+    "best": {'Kp': np.eye(6) * 10.0, 'Ki': np.eye(6) * 0.08},
+    "overshoot": {'Kp': np.eye(6) * 10.0, 'Ki': np.eye(6) * 0.2},
+    "newTask": {'Kp': np.eye(6) * 0.5, 'Ki': np.zeros((6, 6))},
 }
 
 
@@ -153,6 +176,7 @@ def main(sim_name: str):
     # Save sys.stdout to a log file
     # Create the file and directory if it doesn't exist already
     os.makedirs(f'results/{sim_name}', exist_ok=True)
+    print(f'Starting simulation: {sim_name}')
     log_file = open(f'results/{sim_name}/log.txt', 'w')
     sys.stdout = log_file
     print(f'Starting simulation: {sim_name}')
@@ -179,8 +203,8 @@ def main(sim_name: str):
     N = len(sim_traj)
     robot_states = [initial_robot_state]
     errors = []
-    Kp = sim_to_KpKi[sim_name][0]
-    Ki = sim_to_KpKi[sim_name][1]
+    Kp = sim_to_KpKi[sim_name]['Kp']
+    Ki = sim_to_KpKi[sim_name]['Ki']
     for i in range(N-1):
         # Latest robot state
         current_robot_state = robot_states[-1]
@@ -228,9 +252,11 @@ def main(sim_name: str):
 
     # Close the log file
     log_file.close()
+    sys.stdout = sys.__stdout__
+    print(f'Finished simulation: {sim_name}')
 
 
 if __name__ == '__main__':
     main(sim_name='best')
     main(sim_name='overshoot')
-    main(sim_name='newTask')
+    # main(sim_name='newTask')
