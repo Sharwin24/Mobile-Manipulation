@@ -289,6 +289,6 @@ def main(sim_name: str):
 
 
 if __name__ == '__main__':
-    # main(sim_name='best')
-    # main(sim_name='overshoot')
+    main(sim_name='best')
+    main(sim_name='overshoot')
     main(sim_name='newTask')
