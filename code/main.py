@@ -255,7 +255,7 @@ def main(sim_name: str):
     # should have 1500 (or 1501) lines, corresponding to 0.01s between each config.
     # Load the CSV file into Scene6 to see the results.
     np.savetxt(
-        f'results/{sim_name}/final_robot_states.csv', robot_states, delimiter=','
+        f'results/{sim_name}/robot_states.csv', robot_states, delimiter=','
     )
 
     # Plot the error and robot states
