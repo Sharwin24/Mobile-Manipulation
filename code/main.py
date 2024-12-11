@@ -35,8 +35,8 @@ ee_grasping_config = np.array([
 ])
 
 # NewTask Scene Setup
-initial_cube_pose_newTask = [1, 0.2, 0.4]
-final_cube_pose_newTask = [0, -1, -2]
+initial_cube_pose_newTask = [1, 0.2, 0.4]  # [x, y, theta]
+final_cube_pose_newTask = [0, -1, -2]  # [x, y, theta]
 
 # Robot state is a 12x1 vector [chassis_config, arm_config, wheel_config]
 # Chassis Config: [phi, x, y]
@@ -190,6 +190,7 @@ def plot_robot_states(states, reference_states, sim_name: str):
     print(f'Robot states plot saved to results/{sim_name}/robot_states.png')
 
 
+# control_type options: ['FF+PI', 'P', 'PI']
 sim_control_params = {
     "best": {'Kp': np.eye(6) * 2.0, 'Ki': np.eye(6) * 0.01, 'control_type': 'FF+PI'},
     "overshoot": {'Kp': np.eye(6) * 5.0, 'Ki': np.zeros((6, 6)), 'control_type': 'P'},

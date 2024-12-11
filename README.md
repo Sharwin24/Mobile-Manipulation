@@ -3,8 +3,22 @@
 ## Running the Program
 To run the program and generate the trajectories, plots, and log files, run `python3 code/main.py` (if you're in the top level directory). The main function will initialize the robot at a configuration with some error as well as the cube's position (depending on the task). The reference trajectory will be generated and the controller along with the state function will be used to control the robot accordingly.
 
+In `main.py`, the parameters for each simulation can be tuned by adjusting the values within the dictionary `sim_control_params`: 
+
+```python
+# control_type options: ['FF+PI', 'P', 'PI']
+sim_control_params = {
+    "best": {'Kp': np.eye(6) * 2.0, 'Ki': np.eye(6) * 0.01, 'control_type': 'FF+PI'},
+    "overshoot": {'Kp': np.eye(6) * 5.0, 'Ki': np.zeros((6, 6)), 'control_type': 'P'},
+    "newTask": {'Kp': np.eye(6) * 5.0, 'Ki': np.eye(6) * 0.1, 'control_type': 'FF+PI'}
+}
+```
+
 ### Generated Artifacts
 In each simulation (individual folder in the `results/` directory), the following is included:
+
+#### - README_*sim_name*.md
+Includes information about the type of controller, the feedback gains, and other useful info about the results of this simulation.
 
 #### - *sim_name*_log.txt
 A log file that captures all `stdout` output from running the simulation. Expect to see logs from generating the trajectories and files required for CoppeliaSim to run.
