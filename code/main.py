@@ -58,31 +58,6 @@ def pose_to_transformation(x, y, theta):
     ])
 
 
-def create_trajectory(file: str = 'final_trajectory.csv'):
-    T_cube_initial = pose_to_transformation(*initial_cube_pose)
-    T_cube_final = pose_to_transformation(*final_cube_pose)
-    # Generate trajectory
-    traj, gripper_states = trajectory_generator(
-        ee_initial_config=initial_ee_config,
-        cube_initial_config=T_cube_initial,
-        cube_final_config=T_cube_final,
-        ee_grasping_config=ee_grasping_config,
-        standoff_config=standoff_config,
-        num_reference_configs=1
-    )
-    # Convert trajectory to simulation states and save to file
-    sim_traj = traj_to_sim_state(
-        trajectory=traj,
-        gripper_states=gripper_states,
-        write_to_file=True,
-        filename=file
-    )
-    print(
-        f'Trajectory saved to data/{file}, with {len(sim_traj)} states.'
-    )
-    return sim_traj
-
-
 def plot_error(errors):
     # Plot the error over time
     errors = np.array(errors)
@@ -163,7 +138,24 @@ def plot_robot_states(states):
 
 
 def main():
-    sim_traj = create_trajectory()
+    T_cube_initial = pose_to_transformation(*initial_cube_pose)
+    T_cube_final = pose_to_transformation(*final_cube_pose)
+    # Generate trajectory
+    traj, gripper_states = trajectory_generator(
+        ee_initial_config=initial_ee_config,
+        cube_initial_config=T_cube_initial,
+        cube_final_config=T_cube_final,
+        ee_grasping_config=ee_grasping_config,
+        standoff_config=standoff_config,
+        num_reference_configs=1
+    )
+    # Convert trajectory to simulation states and save to file
+    sim_traj = traj_to_sim_state(
+        trajectory=traj,
+        gripper_states=gripper_states,
+        write_to_file=True,
+        filename='final_trajectory.csv'
+    )
     # Loop through reference trajectories generated. If it has N reference configurations, it will have N-1 steps
     # so the Nth configuration is the reference trajectory Xd, and the N+1th configuration as Xd_next
     N = len(sim_traj)

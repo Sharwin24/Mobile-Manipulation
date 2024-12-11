@@ -48,7 +48,7 @@ def traj_to_sim_state(trajectory: list, gripper_states: list, write_to_file: boo
             os.makedirs('data')
             print('Created data directory')
         np.savetxt(f'data/{filename}', sim_state, delimiter=',')
-        print(f'Successfully wrote simulation state to data/{filename}')
+        print(f'Saved trajectory as simulation state to results/{filename}')
     return sim_state
 
 
@@ -189,7 +189,7 @@ def trajectory_generator(
     trajectory = np.concatenate(
         (traj_1, traj_2, traj_3, traj_4, traj_5, traj_6, traj_7, traj_8), axis=0
     )
-    print(f'Successfully generated trajectory with shape {trajectory.shape}')
+    print(f'Successfully generated trajectory')
     return trajectory, gripper_states
 
 
