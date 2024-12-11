@@ -6,10 +6,18 @@ import os
 # python3 trajectory_generator.py
 
 
-def state_to_transform(sim_state: np.ndarray) -> np.ndarray:
-    # sim state is a 13-dimensional vector:
-    # [r11, r12, r13, r21, r22, r23, r31, r32, r33, px, py, pz, gripper state]
-    # return the homogeneous transformation matrix T_se
+def state_to_transform(sim_state: np.array) -> np.array:
+    """
+    Given a simulation state, return the homogeneous transformation matrix T_se.
+    A simulation state is a 13-dimensional vector:
+    [r11, r12, r13, r21, r22, r23, r31, r32, r33, px, py, pz, gripper state]
+
+    Args:
+        sim_state (13x1 np.array): The simulation state of a reference config
+
+    Returns:
+        np.array: The homogeneous transformation matrix T_se
+    """
     return np.array([
         [sim_state[0], sim_state[1], sim_state[2], sim_state[9]],
         [sim_state[3], sim_state[4], sim_state[5], sim_state[10]],
@@ -61,6 +69,9 @@ def trajectory_generator(
       Generate a reference trajectory for the end-effector frame. This trajectory consists of 8 concatenated
       trajectory segments. Each trajectory segment begins and ends at rest.
 
+      Num_reference_configs is the number of reference configurations per 0.01 seconds. 
+      So if you want your controller to run at 1000 Hz, num_reference_configs = 10, freq = num_reference_configs / 0.01
+
       1. A trajectory to move the gripper from its initial configuration to a "standoff" configuration a few cm above the block.
       2. A trajectory to move the gripper down to the grasp position.
       3. Closing of the gripper.
@@ -82,8 +93,6 @@ def trajectory_generator(
     Returns:
       tuple of trajectory (np.ndarray) and gripper_states (list): The reference trajectory and gripper states
     """
-    # num_reference_configs (k) is the number of reference configurations per 0.01 seconds
-    # so if you want your controller to run at 1000 Hz, k = 10, freq = k / 0.01
     # The total trajectory configurations will be
     # total_trajectory_time * (num_reference_configs / 0.01)
     # Each trajectory has a time segment alloted to it and

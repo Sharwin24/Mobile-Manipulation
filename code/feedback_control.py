@@ -3,12 +3,11 @@ import modern_robotics as mr
 from robot_constants import RC
 
 
-def feedback_control(X, Xd, Xd_next, Kp, Ki, dt: float = 0.01) -> tuple:
+def feedback_control(X, Xd, Xd_next, Kp, Ki, control_type: str = 'FF+PI', dt: float = 0.01) -> tuple:
     """
     Calculate the kinematic task-space feedforward plus feedback control law.
 
     V(t) = [Adjoint(inv(X)*Xd)]V_d(t) + Kp*X_err(t) + Ki*integral(X_err(t))
-
 
     Args:
         X (np.array): The current actual end-effector configuration (T_se)
@@ -16,6 +15,7 @@ def feedback_control(X, Xd, Xd_next, Kp, Ki, dt: float = 0.01) -> tuple:
         Xd_next (np.array): The end-effector reference configuration at the next timestep in the reference trajectory
         Kp (np.array): The Proportional gain matrix
         Ki (np.array): The Integral gain matrix
+        control_type (str, optional): The type of simulation. Defaults to 'FF+PI'. ['FF+PI', 'P', 'PI']
         dt (float, optional): The timestep between reference trajectory configs. Defaults to 0.01.
 
     Returns:
@@ -25,8 +25,17 @@ def feedback_control(X, Xd, Xd_next, Kp, Ki, dt: float = 0.01) -> tuple:
     # print(f'X_err:\n{np.round(X_err, 3)}')
     Vd = mr.se3ToVec((1/dt) * mr.MatrixLog6(mr.TransInv(Xd) @ Xd_next))
     # print(f'Vd:\n{np.round(Vd, 3)}')
-    V = mr.Adjoint(mr.TransInv(X) @ Xd) @ Vd + \
-        (Kp @ X_err) + (Ki @ (X_err * dt))
+    if control_type == 'FF+PI':
+        V = mr.Adjoint(mr.TransInv(X) @ Xd) @ Vd + \
+            (Kp @ X_err) + (Ki @ (X_err * dt))
+    elif control_type == 'P':
+        V = (Kp @ X_err)
+    elif control_type == 'PI':
+        V = (Kp @ X_err) + (Ki @ (X_err * dt))
+    else:
+        print(f'Invalid sim_type: {control_type}, using FF+PI')
+        V = mr.Adjoint(mr.TransInv(X) @ Xd) @ Vd + \
+            (Kp @ X_err) + (Ki @ (X_err * dt))
     # print(f'V:\n{np.round(V, 3)}')
     return V, X_err
 
@@ -45,8 +54,13 @@ def compute_robot_speeds(V: np.array, arm_thetas: np.array) -> np.array:
     return np.linalg.pinv(RC.Je(arm_thetas)) @ V
 
 
-def test_joint_limits(joint_positions):
-    pass
+def test_joint_limits(joint_angles) -> np.array:
+    # Returns a list of bools indicating which joint limits are violated
+    # True if joint is within limits, False if joint is outside limits
+    return np.array(
+        [min_limit < joint < max_limit for joint,
+            (min_limit, max_limit) in zip(joint_angles, RC.joint_limits)]
+    )
 
 
 def main():
