@@ -165,10 +165,10 @@ def plot_robot_states(states, sim_name: str):
     print(f'Robot states plot saved to results/{sim_name}/robot_states.png')
 
 
-sim_to_KpKi = {
-    "best": {'Kp': np.eye(6) * 10.0, 'Ki': np.eye(6) * 0.08},
-    "overshoot": {'Kp': np.eye(6) * 10.0, 'Ki': np.eye(6) * 0.2},
-    "newTask": {'Kp': np.eye(6) * 0.5, 'Ki': np.zeros((6, 6))},
+sim_control_params = {
+    "best": {'Kp': np.eye(6) * 10.0, 'Ki': np.eye(6) * 0.08, 'control_type': 'FF+PI'},
+    "overshoot": {'Kp': np.eye(6) * 30.0, 'Ki': np.eye(6) * 0, 'control_type': 'PI'},
+    "newTask": {'Kp': np.eye(6) * 0.5, 'Ki': np.zeros((6, 6)), 'control_type': 'FF+PI'},
 }
 
 
@@ -177,7 +177,7 @@ def main(sim_name: str):
     # Create the file and directory if it doesn't exist already
     os.makedirs(f'results/{sim_name}', exist_ok=True)
     print(f'Starting simulation: {sim_name}')
-    log_file = open(f'results/{sim_name}/log.txt', 'w')
+    log_file = open(f'results/{sim_name}/{sim_name}_log.txt', 'w')
     sys.stdout = log_file
     print(f'Starting simulation: {sim_name}')
     T_cube_initial = pose_to_transformation(*initial_cube_pose)
@@ -203,8 +203,8 @@ def main(sim_name: str):
     N = len(sim_traj)
     robot_states = [initial_robot_state]
     errors = []
-    Kp = sim_to_KpKi[sim_name]['Kp']
-    Ki = sim_to_KpKi[sim_name]['Ki']
+    Kp = sim_control_params[sim_name]['Kp']
+    Ki = sim_control_params[sim_name]['Ki']
     for i in range(N-1):
         # Latest robot state
         current_robot_state = robot_states[-1]
@@ -220,7 +220,8 @@ def main(sim_name: str):
         Xd = state_to_transform(sim_traj[i])
         Xd_next = state_to_transform(sim_traj[i+1])
         # Compute feedback control and save the error
-        V, X_err = feedback_control(X, Xd, Xd_next, Kp, Ki, dt=0.01)
+        control_type = sim_control_params[sim_name]['control_type']
+        V, X_err = feedback_control(X, Xd, Xd_next, Kp, Ki, control_type, dt=0.01)
         errors.append(X_err)
         # robot speeds are 9x1 vector [wheel_speeds, arm_speeds]
         robot_speeds = compute_robot_speeds(V, arm_config)
