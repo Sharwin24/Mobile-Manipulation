@@ -6,7 +6,19 @@ import os
 # python3 trajectory_generator.py
 
 
-def traj_to_sim_state(trajectory, gripper_states, write_to_file=False, filename='trajectory.csv') -> np.ndarray:
+def state_to_transform(sim_state: np.ndarray) -> np.ndarray:
+    # sim state is a 13-dimensional vector:
+    # [r11, r12, r13, r21, r22, r23, r31, r32, r33, px, py, pz, gripper state]
+    # return the homogeneous transformation matrix T_se
+    return np.array([
+        [sim_state[0], sim_state[1], sim_state[2], sim_state[9]],
+        [sim_state[3], sim_state[4], sim_state[5], sim_state[10]],
+        [sim_state[6], sim_state[7], sim_state[8], sim_state[11]],
+        [0, 0, 0, 1]
+    ])
+
+
+def traj_to_sim_state(trajectory: list, gripper_states: list, write_to_file: bool = False, filename: str = 'sim_traj.csv') -> np.ndarray:
     """
     Convert a trajectory and gripper states to a simulation state that can be used to
     visualize the trajectory in CoppeliaSim.
@@ -15,7 +27,7 @@ def traj_to_sim_state(trajectory, gripper_states, write_to_file=False, filename=
         trajectory (list): A list of 4x4 transformation matrices representing the end-effector's configuration
         gripper_states (list): A list of binary values representing the state of the gripper (0 = open, 1 = closed)
         write_to_file (bool, optional): If True, write the simulation state to a file. Defaults to False.
-        filename (str, optional): The filename to write to. Defaults to 'trajectory.csv'.
+        filename (str, optional): The filename to write to. Defaults to 'sim_traj.csv'.
 
     Returns:
         list: A list of simulation states where each state is a 13-dimensional vector:
@@ -31,21 +43,17 @@ def traj_to_sim_state(trajectory, gripper_states, write_to_file=False, filename=
     assert sim_state.shape == (
         len(trajectory), 13), f'Invalid simulation state shape {sim_state.shape}'
     if write_to_file:
-        # if data dir doesn't exist, create it
-        if not os.path.exists('data'):
-            os.makedirs('data')
-            print('Created data directory')
-        np.savetxt(f'data/{filename}', sim_state, delimiter=',')
-        print(f'Successfully wrote simulation state to data/{filename}')
+        np.savetxt(f'results/{filename}', sim_state, delimiter=',')
+        print(f'Saved trajectory as simulation state to results/{filename}')
     return sim_state
 
 
 def trajectory_generator(
-        ee_initial_config,
-        cube_initial_config,
-        cube_final_config,
-        ee_grasping_config,
-        standoff_config,
+        ee_initial_config: np.ndarray,
+        cube_initial_config: np.ndarray,
+        cube_final_config: np.ndarray,
+        ee_grasping_config: np.ndarray,
+        standoff_config: np.ndarray,
         num_reference_configs: int,
         debug: bool = False
 ):
@@ -72,7 +80,7 @@ def trajectory_generator(
         debug (bool): If True, print debug information
 
     Returns:
-      tuple of trajectory
+      tuple of trajectory (np.ndarray) and gripper_states (list): The reference trajectory and gripper states
     """
     # num_reference_configs (k) is the number of reference configurations per 0.01 seconds
     # so if you want your controller to run at 1000 Hz, k = 10, freq = k / 0.01
@@ -81,14 +89,14 @@ def trajectory_generator(
     # Each trajectory has a time segment alloted to it and
     # the sum of the segments should equal the total time
     total_time = 10  # [s]
-    traj_1_time = 0.24 * total_time  # Initial -> Pick_Standoff
-    traj_2_time = 0.01 * total_time  # Pick_Standoff -> Cube_Initial
-    traj_3_time = 0.01 * total_time  # Cube_Initial -> Gripper Closed
-    traj_4_time = 0.24 * total_time  # Gripper Closed -> Pick_Standoff
-    traj_5_time = 0.24 * total_time  # Pick_Standoff -> Place_Standoff
-    traj_6_time = 0.01 * total_time  # Place_Standoff -> Cube_Final
-    traj_7_time = 0.01 * total_time  # Cube_Final -> Gripper Open
-    traj_8_time = 0.24 * total_time  # Gripper Open -> Place_Standoff
+    traj_1_time = 0.245 * total_time  # Initial -> Pick_Standoff
+    traj_2_time = 0.005 * total_time  # Pick_Standoff -> Cube_Initial
+    traj_3_time = 0.005 * total_time  # Cube_Initial -> Gripper Closed
+    traj_4_time = 0.245 * total_time  # Gripper Closed -> Pick_Standoff
+    traj_5_time = 0.245 * total_time  # Pick_Standoff -> Place_Standoff
+    traj_6_time = 0.005 * total_time  # Place_Standoff -> Cube_Final
+    traj_7_time = 0.005 * total_time  # Cube_Final -> Gripper Open
+    traj_8_time = 0.245 * total_time  # Gripper Open -> Place_Standoff
     trajectory_time = np.array([
         traj_1_time, traj_2_time, traj_3_time, traj_4_time,
         traj_5_time, traj_6_time, traj_7_time, traj_8_time
@@ -177,52 +185,50 @@ def trajectory_generator(
     trajectory = np.concatenate(
         (traj_1, traj_2, traj_3, traj_4, traj_5, traj_6, traj_7, traj_8), axis=0
     )
-    print(f'Successfully generated trajectory with shape {trajectory.shape}')
+    print(f'Successfully generated trajectory')
     return trajectory, gripper_states
 
 
-# Initial EE Configuration (T_se, initial)
-ee_initial_config = np.array([
-    [0, 0, 1, 0],
-    [0, 1, 0, 0],
-    [-1, 0, 0, 0.5],
-    [0, 0, 0, 1]
-])
-
-# Initial Cube Configuration (T_sc, initial)
-cube_initial_config = np.array([
-    [1, 0, 0, 1],
-    [0, 1, 0, 0],
-    [0, 0, 1, 0.025],
-    [0, 0, 0, 1]
-])
-
-# Final Cube Configuration (T_sc, final)
-cube_final_config = np.array([
-    [0, 1, 0, 0],
-    [-1, 0, 0, -1],
-    [0, 0, 1, 0.025],
-    [0, 0, 0, 1]
-])
-
-# EE Standoff Configuration (T_ce, standoff)
-standoff_config = np.array([
-    [0, 0, 1, -0.1],
-    [0, 1, 0, 0],
-    [-1, 0, 0, 0.025 + 0.2],
-    [0, 0, 0, 1]
-])
-
-# EE Grasping Configuration, relative to cube (T_ce, grasp)
-ee_grasping_config = np.array([
-    [0, 0, 1, 0],
-    [0, 1, 0, 0],
-    [-1, 0, 0, 0],
-    [0, 0, 0, 1]
-])
-
-
 def main():
+    # Initial EE Configuration (T_se, initial)
+    ee_initial_config = np.array([
+        [0, 0, 1, 0],
+        [0, 1, 0, 0],
+        [-1, 0, 0, 0.5],
+        [0, 0, 0, 1]
+    ])
+
+    # Initial Cube Configuration (T_sc, initial)
+    cube_initial_config = np.array([
+        [1, 0, 0, 1],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0.025],
+        [0, 0, 0, 1]
+    ])
+
+    # Final Cube Configuration (T_sc, final)
+    cube_final_config = np.array([
+        [0, 1, 0, 0],
+        [-1, 0, 0, -1],
+        [0, 0, 1, 0.025],
+        [0, 0, 0, 1]
+    ])
+
+    # EE Standoff Configuration (T_ce, standoff)
+    standoff_config = np.array([
+        [0, 0, 1, -0.1],
+        [0, 1, 0, 0],
+        [-1, 0, 0, 0.025 + 0.2],
+        [0, 0, 0, 1]
+    ])
+
+    # EE Grasping Configuration, relative to cube (T_ce, grasp)
+    ee_grasping_config = np.array([
+        [0, 0, 1, 0],
+        [0, 1, 0, 0],
+        [-1, 0, 0, 0],
+        [0, 0, 0, 1]
+    ])
     trajectory, gripper_states = trajectory_generator(
         ee_initial_config,
         cube_initial_config,
