@@ -14,6 +14,8 @@ sim_control_params = {
 }
 ```
 
+If you want to run a bash script to run the python file for you, run `runscript.sh`
+
 ### Generated Artifacts
 In each simulation (individual folder in the `results/` directory), the following is included:
 
