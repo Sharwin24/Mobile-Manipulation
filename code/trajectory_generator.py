@@ -18,7 +18,7 @@ def state_to_transform(sim_state: np.ndarray) -> np.ndarray:
     ])
 
 
-def traj_to_sim_state(trajectory: list, gripper_states: list, write_to_file: bool = False, filename: str = 'trajectory.csv') -> np.ndarray:
+def traj_to_sim_state(trajectory: list, gripper_states: list, write_to_file: bool = False, filename: str = 'sim_traj.csv') -> np.ndarray:
     """
     Convert a trajectory and gripper states to a simulation state that can be used to
     visualize the trajectory in CoppeliaSim.
@@ -27,7 +27,7 @@ def traj_to_sim_state(trajectory: list, gripper_states: list, write_to_file: boo
         trajectory (list): A list of 4x4 transformation matrices representing the end-effector's configuration
         gripper_states (list): A list of binary values representing the state of the gripper (0 = open, 1 = closed)
         write_to_file (bool, optional): If True, write the simulation state to a file. Defaults to False.
-        filename (str, optional): The filename to write to. Defaults to 'trajectory.csv'.
+        filename (str, optional): The filename to write to. Defaults to 'sim_traj.csv'.
 
     Returns:
         list: A list of simulation states where each state is a 13-dimensional vector:
@@ -43,11 +43,7 @@ def traj_to_sim_state(trajectory: list, gripper_states: list, write_to_file: boo
     assert sim_state.shape == (
         len(trajectory), 13), f'Invalid simulation state shape {sim_state.shape}'
     if write_to_file:
-        # if data dir doesn't exist, create it
-        if not os.path.exists('data'):
-            os.makedirs('data')
-            print('Created data directory')
-        np.savetxt(f'data/{filename}', sim_state, delimiter=',')
+        np.savetxt(f'results/{filename}', sim_state, delimiter=',')
         print(f'Saved trajectory as simulation state to results/{filename}')
     return sim_state
 

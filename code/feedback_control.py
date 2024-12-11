@@ -3,15 +3,24 @@ import modern_robotics as mr
 from robot_constants import RC
 
 
-def feedback_control(X, Xd, Xd_next, Kp, Ki, dt=0.01):
-    # Calculate the kinematic task-space feedforward plus feedback control law,
-    # written as:
-    # V(t) = [Adjoint(inv(X)*Xd)]V_d(t) + Kp*X_err(t) + Ki*integral(X_err(t))
-    # X = The current actual end-effector configuration (T_se)
-    # Xd = The current end-effector reference configuration (T_se,d)
-    # Xd_next = The end-effector reference configuration at the next timestep in the reference trajectory at a time dt later
-    # Kp = The P gain matrix, Ki = The I gain matrix
-    # dt = The timestep between reference trajectory configurations
+def feedback_control(X, Xd, Xd_next, Kp, Ki, dt: float = 0.01) -> tuple:
+    """
+    Calculate the kinematic task-space feedforward plus feedback control law.
+
+    V(t) = [Adjoint(inv(X)*Xd)]V_d(t) + Kp*X_err(t) + Ki*integral(X_err(t))
+
+
+    Args:
+        X (np.array): The current actual end-effector configuration (T_se)
+        Xd (np.array): The current end-effector reference configuration (T_se,d)
+        Xd_next (np.array): The end-effector reference configuration at the next timestep in the reference trajectory
+        Kp (np.array): The Proportional gain matrix
+        Ki (np.array): The Integral gain matrix
+        dt (float, optional): The timestep between reference trajectory configs. Defaults to 0.01.
+
+    Returns:
+        tuple: A tuple containing the twist V and the error X_err
+    """
     X_err = mr.se3ToVec(mr.MatrixLog6(mr.TransInv(X) @ Xd))
     # print(f'X_err:\n{np.round(X_err, 3)}')
     Vd = mr.se3ToVec((1/dt) * mr.MatrixLog6(mr.TransInv(Xd) @ Xd_next))
@@ -22,9 +31,17 @@ def feedback_control(X, Xd, Xd_next, Kp, Ki, dt=0.01):
     return V, X_err
 
 
-def compute_robot_speeds(V, arm_thetas):
-    # print(f'Je:\n{np.round(RC.Je(arm_thetas), 3)}')
-    # returns robot speeds as [wheel_speeds, arm_speeds]
+def compute_robot_speeds(V: np.array, arm_thetas: np.array) -> np.array:
+    """
+    Compute the robot speeds given the twist and arm joint angles.
+
+    Args:
+        V (np.array): The twist applied to the robot
+        arm_thetas (np.array): The arm joint angles [rad]
+
+    Returns:
+        np.array: The robot speeds as [wheel_speeds, arm_speeds]
+    """
     return np.linalg.pinv(RC.Je(arm_thetas)) @ V
 
 

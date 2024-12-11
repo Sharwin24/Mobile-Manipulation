@@ -5,11 +5,18 @@ from robot_constants import RC
 import os
 
 
-def odometry(chassis_config, delta_wheel_config):
-    # The function Odometry is based on the equations in Chapter 13.4
-    # It computes the new chassis configuration based on the old configuration and the change in wheel angles
+def odometry(chassis_config: np.array, delta_wheel_config: np.array) -> np.array:
+    """
+    Using Odometry, a new chassis configuration is computed based on the
+    difference between the current and the previous wheel configuration.
 
-    # Get configs
+    Args:
+        chassis_config (np.array): The current chassis configuration [phi, x, y]
+        delta_wheel_config (np.array): The difference in wheel configuration
+
+    Returns:
+        np.array: The new chassis configuration [phi, x, y]
+    """
     phi, x, y = chassis_config
     # delta_theta is the difference in wheel angles
     # Since we are assuming constant wheel speeds, dt = 1
@@ -22,7 +29,6 @@ def odometry(chassis_config, delta_wheel_config):
     T_bk = mr.MatrixExp6(mr.VecTose3(V_b6))
     T_sk = RC.T_sb(phi, x, y) @ T_bk
     new_phi = np.arctan2(T_sk[1, 0], T_sk[0, 0])
-    # new_phi = np.arccos(T_sk[0, 0])
     new_chassis_config = np.array([
         new_phi,
         T_sk[0, 3],
@@ -31,13 +37,31 @@ def odometry(chassis_config, delta_wheel_config):
     return new_chassis_config
 
 
-def next_state(
-        robot_state,
-        robot_speeds,
-        dt,
-        max_arm_motor_speed,
-        max_wheel_motor_speed
-):
+def next_state(robot_state, robot_speeds, dt: float,
+               max_arm_motor_speed: float, max_wheel_motor_speed: float) -> np.array:
+    """
+    Given a robot state and the robot speeds, compute the next state after a timestep.
+    Also clip the speeds to the maximum allowed values.
+
+    Each robot state is a 13x1 vector:
+    - 3 for chassis config [phi, x, y]
+    - 5 for arm joint angles [theta1, theta2, theta3, theta4, theta5]
+    - 4 for wheel angles [thetaL1, thetaL2, thetaR1, thetaR2]
+
+    The robot speeds are a 9x1 vector:
+    - 4 wheel speeds [u1, u2, u3, u4]
+    - 5 arm speeds [w1, w2, w3, w4, w5]
+
+    Args:
+        robot_state (np.array): The current robot state as a 13x1 vector
+        robot_speeds (np.array): The robot speeds as a 9x1 vector
+        dt (float): The timestep
+        max_arm_motor_speed (float): The maximum allowed arm motor speed [rad/s]
+        max_wheel_motor_speed (float): The maximum allowed wheel motor speed [rad/s]
+
+    Returns:
+        np.array: The new robot state after the timestep
+    """
     # robot_state is a 13x1 vector
     # 3 for chassis config, 5 for arm, 4 for wheel angles, 1 for gripper state
     # robot_speeds is a 9x1 vector

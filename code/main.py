@@ -1,4 +1,5 @@
-import modern_robotics as mr
+import sys
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -58,7 +59,7 @@ def pose_to_transformation(x, y, theta):
     ])
 
 
-def plot_error(errors):
+def plot_error(errors, sim_name: str):
     # Plot the error over time
     errors = np.array(errors)
     # Error is a 6x1 vector [w_x, w_y, w_z, v_x, v_y, v_z]
@@ -74,10 +75,13 @@ def plot_error(errors):
     plt.xlabel('Sim Steps')
     plt.ylabel('Error')
     plt.grid()
-    plt.savefig('results/error_over_time.png')
+    plt.savefig(f'results/{sim_name}/error_plot.png')
+    print(f'Error plot saved to results/{sim_name}/error_plot.png')
+    # Also save errors to a csv file
+    np.savetxt(f'results/{sim_name}/errors.csv', errors, delimiter=',')
 
 
-def plot_robot_states(states):
+def plot_robot_states(states, sim_name: str):
     # Plots the output of simulate
     # states is a list of robot states
     # where each robot state is a 12x1 vector
@@ -134,10 +138,24 @@ def plot_robot_states(states):
 
     # Adjust layout and save the figure
     plt.tight_layout()
-    plt.savefig('results/robot_states.png')
+    plt.savefig(f'results/{sim_name}/robot_states.png')
+    print(f'Robot states plot saved to results/{sim_name}robot_states.png')
 
 
-def main():
+sim_to_KpKi = {
+    "best": (np.eye(6), np.zeros((6, 6))),
+    "overshoot": (np.eye(6) * 0.5, np.zeros((6, 6))),
+    "newTask": (np.eye(6), np.eye(6) * 0.1)
+}
+
+
+def main(sim_name: str):
+    # Save sys.stdout to a log file
+    # Create the file and directory if it doesn't exist already
+    os.makedirs(f'results/{sim_name}', exist_ok=True)
+    log_file = open(f'results/{sim_name}/log.txt', 'w')
+    sys.stdout = log_file
+    print(f'Starting simulation: {sim_name}')
     T_cube_initial = pose_to_transformation(*initial_cube_pose)
     T_cube_final = pose_to_transformation(*final_cube_pose)
     # Generate trajectory
@@ -154,40 +172,37 @@ def main():
         trajectory=traj,
         gripper_states=gripper_states,
         write_to_file=True,
-        filename='final_trajectory.csv'
+        filename=f'{sim_name}/sim_trajectory.csv'
     )
     # Loop through reference trajectories generated. If it has N reference configurations, it will have N-1 steps
     # so the Nth configuration is the reference trajectory Xd, and the N+1th configuration as Xd_next
     N = len(sim_traj)
     robot_states = [initial_robot_state]
     errors = []
-    Kp = np.eye(6)
-    Ki = np.zeros((6, 6))
+    Kp = sim_to_KpKi[sim_name][0]
+    Ki = sim_to_KpKi[sim_name][1]
     for i in range(N-1):
-        # Each time through the loop, you
-        # calculate the control law using FeedbackControl and generate th wheel and joint controls using Je
-        # Send the controls, config, and timestep to next_state to calculate the new configuration
-        # store every kth configuration for later animation (Note that the reference trajectory has k reference configs per 0.01s)
-        # k=1 for simplicity
-        # Store every kth X_err 6-vector, so you can later plot the evolution of the error over time.
-
         # Latest robot state
         current_robot_state = robot_states[-1]
         arm_config = current_robot_state[3:8]
+        # Current robot configuration
         X = RC.T_se(
             phi=current_robot_state[0],
             x=current_robot_state[1],
             y=current_robot_state[2],
             arm_thetas=arm_config
         )
+        # Using simulation state, convert to transformation matrix
         Xd = state_to_transform(sim_traj[i])
         Xd_next = state_to_transform(sim_traj[i+1])
+        # Compute feedback control and save the error
         V, X_err = feedback_control(X, Xd, Xd_next, Kp, Ki, dt=0.01)
         errors.append(X_err)
         # robot speeds are 9x1 vector [wheel_speeds, arm_speeds]
         robot_speeds = compute_robot_speeds(V, arm_config)
+        # Compute the next state using the current state and robot speeds
         new_state = next_state(
-            robot_state=robot_states[-1],
+            robot_state=current_robot_state,
             robot_speeds=robot_speeds,
             dt=0.01,
             max_wheel_motor_speed=40.0,  # [rad/s]
@@ -203,12 +218,19 @@ def main():
     # After the loop, write to a csv file of configurations. If the total time of the motion is 15 seconds, the csv file
     # should have 1500 (or 1501) lines, corresponding to 0.01s between each config.
     # Load the CSV file into Scene6 to see the results.
-    np.savetxt('data/final_robot_states.csv', robot_states, delimiter=',')
+    np.savetxt(
+        f'results/{sim_name}/final_robot_states.csv', robot_states, delimiter=','
+    )
 
     # Plot the error and robot states
-    plot_error(errors)
-    plot_robot_states(robot_states)
+    plot_error(errors, sim_name)
+    plot_robot_states(robot_states, sim_name)
+
+    # Close the log file
+    log_file.close()
 
 
 if __name__ == '__main__':
-    main()
+    main(sim_name='best')
+    main(sim_name='overshoot')
+    main(sim_name='newTask')
