@@ -81,8 +81,19 @@ class RobotConstants:
         return np.array([B1, B2, B3, B4, B5]).T
 
     @property
+    def max_arm_motor_speed(self) -> float:
+        """The maximum allowed arm motor speed [rad/s]"""
+        return 20.0
+
+    @property
+    def max_wheel_motor_speed(self) -> float:
+        """The maximum allowed wheel motor speed [rad/s]"""
+        return 20.0
+
+    @property
     def joint_limits(self) -> np.array:
         """The min/max joint limits for the 5 arm joints [rad]"""
+        # TODO: Update the joint limits with the actual values
         return np.array(
             [-np.pi, np.pi],  # Joint 1
             [-np.pi, np.pi],  # Joint 2
@@ -120,7 +131,6 @@ class RobotConstants:
         # 6x5 Jacobian Matrix for the arm
         J_arm = mr.JacobianBody(self.B, arm_thetas)
         # 6x4 Jacobian Matrix for the base
-        # F_6 = [0_m, 0_m, F, 0_m] 6xm matrix
         F_6 = np.array([
             np.zeros(4),
             np.zeros(4),

@@ -261,8 +261,8 @@ def main(sim_name: str):
             robot_state=current_robot_state,
             robot_speeds=robot_speeds,
             dt=0.01,
-            max_wheel_motor_speed=20.0,  # [rad/s]
-            max_arm_motor_speed=20.0  # [rad/s]
+            max_wheel_motor_speed=RC.max_wheel_motor_speed,  # [rad/s]
+            max_arm_motor_speed=RC.max_arm_motor_speed  # [rad/s]
         )
         # Add the gripper state to the new state
         gripper_state = sim_traj[i][-1]
