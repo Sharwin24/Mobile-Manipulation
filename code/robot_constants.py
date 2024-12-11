@@ -12,22 +12,22 @@ class RobotConstants:
     """
 
     @property
-    def W(self):
-        # Width of Chassis [m]
+    def W(self) -> float:
+        """The Width of the chassis [m]"""
         return 0.3 / 2
 
     @property
-    def L(self):
-        # Length of Chassis [m]
+    def L(self) -> float:
+        """The Length of the chassis [m]"""
         return 0.47 / 2
 
     @property
-    def R(self):
-        # Wheel radius [m]
+    def R(self) -> float:
+        """The wheel radius [m]"""
         return 0.0475
 
     @property
-    def H0(self):
+    def H0(self) -> np.array:
         R = self.R
         L = self.L
         W = self.W
@@ -39,8 +39,8 @@ class RobotConstants:
         ])
 
     @property
-    def F(self):
-        # F = pinv(H0)
+    def F(self) -> np.array:
+        """F = pinv(H0)"""
         R = self.R
         L = self.L
         W = self.W
@@ -51,8 +51,8 @@ class RobotConstants:
         ])
 
     @property
-    def M(self):
-        # M_0e = end effector with respect to base frame when the arm is at the home configuration
+    def M(self) -> np.array:
+        """The home configuration of the arm, (M_0e)"""
         return np.array([
             [1, 0, 0, 0.033],
             [0, 1, 0, 0],
@@ -61,8 +61,8 @@ class RobotConstants:
         ])
 
     @property
-    def T_b0(self):
-        # chassis frame [b] to base frame of arm [0]
+    def T_b0(self) -> np.array:
+        """Transformation matrix from chassis frame [b] -> base frame of arm [0]"""
         return np.array([
             [1, 0, 0, 0.1662],
             [0, 1, 0, 0],
@@ -72,6 +72,7 @@ class RobotConstants:
 
     @property
     def B(self):
+        """Screw axes of the arm joints in the end-effector frame"""
         B1 = np.array([0, 0, 1, 0, 0.033, 0])
         B2 = np.array([0, -1, 0, -0.5076, 0, 0])
         B3 = np.array([0, -1, 0, -0.3526, 0, 0])
@@ -79,7 +80,28 @@ class RobotConstants:
         B5 = np.array([0, 0, 1, 0, 0, 0])
         return np.array([B1, B2, B3, B4, B5]).T
 
+    @property
+    def joint_limits(self) -> np.array:
+        """The min/max joint limits for the 5 arm joints [rad]"""
+        return np.array(
+            [-np.pi, np.pi],  # Joint 1
+            [-np.pi, np.pi],  # Joint 2
+            [-np.pi, np.pi],  # Joint 3
+            [-np.pi, np.pi],  # Joint 4
+            [-np.pi, np.pi]  # Joint 5
+        )
+
     def robot_config(self, T_se: np.array) -> np.array:
+        """
+        Given an end-effector transformation (T_se), return the robot configuration.
+        The robot configuration is a 8x1 vector: [phi, x, y, theta1, theta2, theta3, theta4, theta5]
+
+        Args:
+            T_se (np.array): The transformation matrix from the space frame to the end-effector frame
+
+        Returns:
+            (8x1) np.array: The robot configuration: [phi, x, y, theta1, theta2, theta3, theta4, theta5]
+        """
         # Given a transformation from space frame to the end-effector
         # return the robot configuration [phi, x, y, theta1, theta2, theta3, theta4, theta5]
         arm_config = mr.IKinBody(
@@ -125,7 +147,7 @@ class RobotConstants:
             y (float): y-coordinate of the base frame [m]
 
         Returns:
-            np.array: 4x4 Transformation matrix from the space frame to the base frame
+            (4x4) np.array: Transformation matrix from the space frame to the base frame
         """
         return np.array([
             [np.cos(phi), -np.sin(phi), 0, x],
@@ -135,9 +157,30 @@ class RobotConstants:
         ])
 
     def T_0e(self, arm_thetas: np.array) -> np.array:
+        """
+        Transformation matrix from the base frame of the arm to the end-effector frame.
+
+        Args:
+            arm_thetas (np.array): The arm joint angles [rad]
+
+        Returns:
+            (4x4) np.array: The transformation matrix from the base frame of the arm to the end-effector frame
+        """
         return mr.FKinBody(self.M, self.B, arm_thetas)
 
     def T_se(self, phi: float, x: float, y: float, arm_thetas: np.array) -> np.array:
+        """
+        Transformation matrix from the space frame to the end-effector frame.
+
+        Args:
+            phi (float): The angle of the base frame [rad]
+            x (float): The x-coordinate of the base frame [m]
+            y (float): The y-coordinate of the base frame [m]
+            arm_thetas (np.array): The arm joint angles [rad]
+
+        Returns:
+            (4x4) np.array: The transformation matrix from the space frame to the end-effector frame
+        """
         return self.T_sb(phi, x, y) @ self.T_b0 @ self.T_0e(arm_thetas)
 
 

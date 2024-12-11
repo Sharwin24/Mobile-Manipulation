@@ -9,7 +9,6 @@ def feedback_control(X, Xd, Xd_next, Kp, Ki, control_type: str = 'FF+PI', dt: fl
 
     V(t) = [Adjoint(inv(X)*Xd)]V_d(t) + Kp*X_err(t) + Ki*integral(X_err(t))
 
-
     Args:
         X (np.array): The current actual end-effector configuration (T_se)
         Xd (np.array): The current end-effector reference configuration (T_se,d)
@@ -55,8 +54,13 @@ def compute_robot_speeds(V: np.array, arm_thetas: np.array) -> np.array:
     return np.linalg.pinv(RC.Je(arm_thetas)) @ V
 
 
-def test_joint_limits(joint_positions):
-    pass
+def test_joint_limits(joint_angles) -> np.array:
+    # Returns a list of bools indicating which joint limits are violated
+    # True if joint is within limits, False if joint is outside limits
+    return np.array(
+        [min_limit < joint < max_limit for joint,
+            (min_limit, max_limit) in zip(joint_angles, RC.joint_limits)]
+    )
 
 
 def main():
