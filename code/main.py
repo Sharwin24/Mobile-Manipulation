@@ -34,11 +34,15 @@ ee_grasping_config = np.array([
     [0, 0, 0, 1]
 ])
 
+# NewTask Scene Setup
+initial_cube_pose_newTask = [1, 0.2, 0.4]
+final_cube_pose_newTask = [0, -1, -2]
+
 # Robot state is a 12x1 vector [chassis_config, arm_config, wheel_config]
 # Chassis Config: [phi, x, y]
-initial_chassis_config = np.array([0, 0, 0])
+initial_chassis_config = np.array([np.deg2rad(30), 0.1, 0.2])
 # Arm Config: [theta1, theta2, theta3, theta4, theta5]
-initial_arm_config = np.array([0, 0, 0.2, -1.6, 0])
+initial_arm_config = np.array([0, -0.587, -0.9, 0, 0])
 # Wheel Config: [thetaL1, thetaL2, thetaR1, thetaR2]
 initial_wheel_config = np.array([0, 0, 0, 0])
 # Gripper state: [0] for open, [1] for closed
@@ -111,6 +115,7 @@ def plot_robot_states(states, reference_states, sim_name: str):
 
     # Chassis configs
     states = np.array(states)
+    phi = states[:, 0]
     x = states[:, 1]
     y = states[:, 2]
     # Arm configs
@@ -119,18 +124,27 @@ def plot_robot_states(states, reference_states, sim_name: str):
     theta3 = states[:, 5]
     theta4 = states[:, 6]
     theta5 = states[:, 7]
+    arm_configs = states[:, 3:8]
     # Wheel configs
     wheel1 = states[:, 8]
     wheel2 = states[:, 9]
     wheel3 = states[:, 10]
     wheel4 = states[:, 11]
 
+    # Actual T_se transformations
+    actual_transformations = np.array(
+        [RC.T_se(phi, x, y, arm_config)
+         for phi, x, y, arm_config in zip(phi, x, y, arm_configs)]
+    )
+    actual_ee_x = actual_transformations[:, 0, 3]
+    actual_ee_y = actual_transformations[:, 1, 3]
+
     # Reference T_se transformations
     reference_states = np.array(
         [state_to_transform(s) for s in reference_states]
     )
-    reference_x = reference_states[:, 0, 3]
-    reference_y = reference_states[:, 1, 3]
+    reference_ee_x = reference_states[:, 0, 3]
+    reference_ee_y = reference_states[:, 1, 3]
 
     # Create a single figure with three subplots
     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
@@ -139,8 +153,10 @@ def plot_robot_states(states, reference_states, sim_name: str):
     axs[0].plot(x, y)
     axs[0].plot(x[0], y[0], 'go', label='Start')
     axs[0].plot(x[-1], y[-1], 'ro', label='End')
-    # Also plot the reference trajectory in dashed lines
-    axs[0].plot(reference_x, reference_y, 'k--', label='Reference')
+    # Plot the end effector position in blue dashed lines
+    axs[0].plot(actual_ee_x, actual_ee_y, 'b--', label='EE Actual')
+    # Also plot the reference trajectory in black dashed lines
+    axs[0].plot(reference_ee_x, reference_ee_y, 'k--', label='EE Reference')
     axs[0].set_title(f'Chassis Trajectory ({sim_name})')
     axs[0].set_xlabel('x [m]')
     axs[0].set_ylabel('y [m]')
@@ -175,9 +191,9 @@ def plot_robot_states(states, reference_states, sim_name: str):
 
 
 sim_control_params = {
-    "best": {'Kp': np.eye(6) * 5.0, 'Ki': np.eye(6) * 0.1, 'control_type': 'FF+PI'},
-    "overshoot": {'Kp': np.eye(6) * 30.0, 'Ki': np.zeros((6, 6)), 'control_type': 'P'},
-    "newTask": {'Kp': np.eye(6) * 0.5, 'Ki': np.zeros((6, 6)), 'control_type': 'FF+PI'},
+    "best": {'Kp': np.eye(6) * 2.0, 'Ki': np.eye(6) * 0.01, 'control_type': 'FF+PI'},
+    "overshoot": {'Kp': np.eye(6) * 5.0, 'Ki': np.zeros((6, 6)), 'control_type': 'P'},
+    "newTask": {'Kp': np.eye(6) * 5.0, 'Ki': np.eye(6) * 0.1, 'control_type': 'FF+PI'}
 }
 
 
@@ -189,8 +205,12 @@ def main(sim_name: str):
     log_file = open(f'results/{sim_name}/{sim_name}_log.txt', 'w')
     sys.stdout = log_file
     print(f'Starting simulation: {sim_name}')
-    T_cube_initial = pose_to_transformation(*initial_cube_pose)
-    T_cube_final = pose_to_transformation(*final_cube_pose)
+    if sim_name == 'newTask':
+        T_cube_initial = pose_to_transformation(*initial_cube_pose_newTask)
+        T_cube_final = pose_to_transformation(*final_cube_pose_newTask)
+    else:
+        T_cube_initial = pose_to_transformation(*initial_cube_pose)
+        T_cube_final = pose_to_transformation(*final_cube_pose)
     # Generate trajectory
     traj, gripper_states = trajectory_generator(
         ee_initial_config=initial_ee_config,
@@ -241,8 +261,8 @@ def main(sim_name: str):
             robot_state=current_robot_state,
             robot_speeds=robot_speeds,
             dt=0.01,
-            max_wheel_motor_speed=40.0,  # [rad/s]
-            max_arm_motor_speed=40.0  # [rad/s]
+            max_wheel_motor_speed=20.0,  # [rad/s]
+            max_arm_motor_speed=20.0  # [rad/s]
         )
         # Add the gripper state to the new state
         gripper_state = sim_traj[i][-1]
@@ -269,6 +289,6 @@ def main(sim_name: str):
 
 
 if __name__ == '__main__':
-    main(sim_name='best')
-    main(sim_name='overshoot')
-    # main(sim_name='newTask')
+    # main(sim_name='best')
+    # main(sim_name='overshoot')
+    main(sim_name='newTask')
