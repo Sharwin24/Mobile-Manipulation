@@ -3,7 +3,7 @@ import modern_robotics as mr
 from robot_constants import RC
 
 
-def feedback_control(X, Xd, Xd_next, Kp, Ki, sim_type: str = 'FF+PI', dt: float = 0.01) -> tuple:
+def feedback_control(X, Xd, Xd_next, Kp, Ki, control_type: str = 'FF+PI', dt: float = 0.01) -> tuple:
     """
     Calculate the kinematic task-space feedforward plus feedback control law.
 
@@ -16,7 +16,7 @@ def feedback_control(X, Xd, Xd_next, Kp, Ki, sim_type: str = 'FF+PI', dt: float 
         Xd_next (np.array): The end-effector reference configuration at the next timestep in the reference trajectory
         Kp (np.array): The Proportional gain matrix
         Ki (np.array): The Integral gain matrix
-        sim_type (str, optional): The type of simulation. Defaults to 'FF+PI'. ['FF+PI', 'P', 'PI']
+        control_type (str, optional): The type of simulation. Defaults to 'FF+PI'. ['FF+PI', 'P', 'PI']
         dt (float, optional): The timestep between reference trajectory configs. Defaults to 0.01.
 
     Returns:
@@ -26,15 +26,15 @@ def feedback_control(X, Xd, Xd_next, Kp, Ki, sim_type: str = 'FF+PI', dt: float 
     # print(f'X_err:\n{np.round(X_err, 3)}')
     Vd = mr.se3ToVec((1/dt) * mr.MatrixLog6(mr.TransInv(Xd) @ Xd_next))
     # print(f'Vd:\n{np.round(Vd, 3)}')
-    if sim_type == 'FF+PI':
+    if control_type == 'FF+PI':
         V = mr.Adjoint(mr.TransInv(X) @ Xd) @ Vd + \
             (Kp @ X_err) + (Ki @ (X_err * dt))
-    elif sim_type == 'P':
+    elif control_type == 'P':
         V = (Kp @ X_err)
-    elif sim_type == 'PI':
+    elif control_type == 'PI':
         V = (Kp @ X_err) + (Ki @ (X_err * dt))
     else:
-        print(f'Invalid sim_type: {sim_type}, using FF+PI')
+        print(f'Invalid sim_type: {control_type}, using FF+PI')
         V = mr.Adjoint(mr.TransInv(X) @ Xd) @ Vd + \
             (Kp @ X_err) + (Ki @ (X_err * dt))
     # print(f'V:\n{np.round(V, 3)}')
