@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from robot_constants import RC
 from next_state import next_state
 from trajectory_generator import trajectory_generator, traj_to_sim_state, state_to_transform, state_to_transform
-from feedback_control import feedback_control, compute_robot_speeds
+from feedback_control import feedback_control, compute_robot_speeds, test_joint_limits
 
 # Scene setup
 # Initial Cube Configuration [x, y, theta] -> [1, 0, 0]
@@ -34,15 +34,13 @@ ee_grasping_config = np.array([
     [0, 0, 0, 1]
 ])
 
-# NewTask Scene Setup
-initial_cube_pose_newTask = [1, 0.2, 0.4]  # [x, y, theta]
-final_cube_pose_newTask = [0, -1, -2]  # [x, y, theta]
-
 # Robot state is a 12x1 vector [chassis_config, arm_config, wheel_config]
 # Chassis Config: [phi, x, y]
 initial_chassis_config = np.array([np.deg2rad(30), 0.1, 0.2])
 # Arm Config: [theta1, theta2, theta3, theta4, theta5]
 initial_arm_config = np.array([0, -0.587, -0.9, 0, 0])
+assert all(test_joint_limits(initial_arm_config)
+           ), 'Initial arm config is out of joint limits'
 # Wheel Config: [thetaL1, thetaL2, thetaR1, thetaR2]
 initial_wheel_config = np.array([0, 0, 0, 0])
 # Gripper state: [0] for open, [1] for closed
@@ -51,6 +49,10 @@ initial_robot_state = np.concatenate(
     [initial_chassis_config, initial_arm_config,
      initial_wheel_config, [initial_gripper_state]]
 )
+
+# NewTask Scene Setup
+initial_cube_pose_newTask = [1, 0.2, 0.4]  # [x, y, theta]
+final_cube_pose_newTask = [0, -1, -2]  # [x, y, theta]
 
 
 def pose_to_transformation(x, y, theta):
@@ -265,6 +267,22 @@ def main(sim_name: str):
             max_wheel_motor_speed=RC.max_wheel_motor_speed,  # [rad/s]
             max_arm_motor_speed=RC.max_arm_motor_speed  # [rad/s]
         )
+        new_arm_state = new_state[3:8]
+        exceeded_joint_limits = test_joint_limits(new_arm_state)
+        if any(exceeded_joint_limits):
+            # Create a list of violated joints by joint number (index+1)
+            violated_joints = [i+1 for i,
+                               v in enumerate(exceeded_joint_limits) if v]
+            # Recalculate the robot speeds with violated joints set to 0
+            robot_speeds = compute_robot_speeds(V, arm_config, violated_joints)
+            # Recalculate the new state with the new robot speeds
+            new_state = next_state(
+                robot_state=current_robot_state,
+                robot_speeds=robot_speeds,
+                dt=0.01,
+                max_wheel_motor_speed=RC.max_wheel_motor_speed,  # [rad/s]
+                max_arm_motor_speed=RC.max_arm_motor_speed  # [rad/s]
+            )
         # Add the gripper state to the new state
         gripper_state = sim_traj[i][-1]
         new_state = np.concatenate([new_state, [gripper_state]])

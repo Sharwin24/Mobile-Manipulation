@@ -91,16 +91,21 @@ class RobotConstants:
         return 20.0
 
     @property
-    def joint_limits(self) -> np.array:
-        """The min/max joint limits for the 5 arm joints [rad]"""
-        # TODO: Update the joint limits with the actual values
-        return np.array(
-            [-np.pi, np.pi],  # Joint 1
-            [-np.pi, np.pi],  # Joint 2
-            [-np.pi, np.pi],  # Joint 3
-            [-np.pi, np.pi],  # Joint 4
-            [-np.pi, np.pi]  # Joint 5
-        )
+    def joint_limits(self) -> list[tuple[float, float]]:
+        """
+        The joint limits for each of the 5 arm joints [rad]
+        TODO: Update the joint limits with the actual values
+
+        Returns:
+            list[tuple[float, float]]: The min/max joint limits for the 5 arm joints [rad]
+        """
+        return [
+            (-np.pi, np.pi),  # Joint 1
+            (-np.pi, np.pi),  # Joint 2
+            (-np.pi, np.pi),  # Joint 3
+            (-np.pi, np.pi),  # Joint 4
+            (-np.pi, np.pi)  # Joint 5
+        ]
 
     def robot_config(self, T_se: np.array) -> np.array:
         """
@@ -127,9 +132,12 @@ class RobotConstants:
         base_config = [phi, x, y]
         return np.hstack((base_config, arm_config))
 
-    def Je(self, arm_thetas: np.array) -> np.array:
+    def Je(self, arm_thetas: np.array, violated_joints: list[int] = []) -> np.array:
         # 6x5 Jacobian Matrix for the arm
         J_arm = mr.JacobianBody(self.B, arm_thetas)
+        # If any joints are violated, set the corresponding column to 0
+        for j in violated_joints:
+            J_arm[:, j] = 0
         # 6x4 Jacobian Matrix for the base
         F_6 = np.array([
             np.zeros(4),
