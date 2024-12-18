@@ -39,8 +39,8 @@ ee_grasping_config = np.array([
 initial_chassis_config = np.array([np.deg2rad(30), 0.1, 0.2])
 # Arm Config: [theta1, theta2, theta3, theta4, theta5]
 initial_arm_config = np.array([0, -0.587, -0.9, 0, 0])
-assert all(test_joint_limits(initial_arm_config)
-           ), 'Initial arm config is out of joint limits'
+assert not all(test_joint_limits(initial_arm_config)
+               ), 'Initial arm config is out of joint limits'
 # Wheel Config: [thetaL1, thetaL2, thetaR1, thetaR2]
 initial_wheel_config = np.array([0, 0, 0, 0])
 # Gripper state: [0] for open, [1] for closed
@@ -83,6 +83,7 @@ def plot_error(errors, sim_name: str):
     plt.legend()
     plt.title('Error Over Time')
     plt.xlabel('Sim Steps')
+    # TODO: Units
     plt.ylabel('Error')
     plt.grid()
 
@@ -133,6 +134,12 @@ def plot_robot_states(states, reference_states, sim_name: str):
     wheel3 = states[:, 10]
     wheel4 = states[:, 11]
 
+    # Get joint limits for each joint and plot straight line
+    min_limits = [jl[0] for jl in RC.joint_limits]
+    max_limits = [jl[1] for jl in RC.joint_limits]
+    # min_limits = np.full((N, 5), min_limits)
+    # max_limits = np.full((N, 5), max_limits)
+
     # Actual T_se transformations
     actual_transformations = np.array(
         [RC.T_se(phi, x, y, arm_config)
@@ -152,13 +159,13 @@ def plot_robot_states(states, reference_states, sim_name: str):
     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
 
     # Plot the trajectory of the robot's chassis
-    axs[0].plot(x, y)
+    axs[0].plot(x, y, 'b-')
     axs[0].plot(x[0], y[0], 'go', label='Start')
     axs[0].plot(x[-1], y[-1], 'ro', label='End')
-    # Plot the end effector position in blue dashed lines
-    axs[0].plot(actual_ee_x, actual_ee_y, 'b--', label='EE Actual')
     # Also plot the reference trajectory in black dashed lines
-    axs[0].plot(reference_ee_x, reference_ee_y, 'k--', label='EE Reference')
+    axs[0].plot(reference_ee_x, reference_ee_y, 'k:', label='EE Reference')
+    # Plot the end effector position in green dotted lines
+    axs[0].plot(actual_ee_x, actual_ee_y, 'b--', label='EE Actual')
     axs[0].set_title(f'Chassis Trajectory ({sim_name})')
     axs[0].set_xlabel('x [m]')
     axs[0].set_ylabel('y [m]')
@@ -166,11 +173,25 @@ def plot_robot_states(states, reference_states, sim_name: str):
     axs[0].grid()
 
     # Plot the arm joint angles
-    axs[1].plot(theta1, label='Joint 1')
-    axs[1].plot(theta2, label='Joint 2')
-    axs[1].plot(theta3, label='Joint 3')
-    axs[1].plot(theta4, label='Joint 4')
-    axs[1].plot(theta5, label='Joint 5')
+    jc = {1: 'r', 2: 'g', 3: 'b', 4: 'm', 5: 'c'}
+    axs[1].plot(theta1, jc[1], label='Joint 1')
+    axs[1].plot(theta2, jc[2], label='Joint 2')
+    axs[1].plot(theta3, jc[3], label='Joint 3')
+    axs[1].plot(theta4, jc[4], label='Joint 4')
+    axs[1].plot(theta5, jc[5], label='Joint 5')
+    # Plot joint limits
+    for j in range(5):
+        axs[1].axhline(
+            min_limits[j],
+            color=f'{jc[j+1]}',
+            linestyle='--',
+            label=f'Joint {j+1} Min'
+        )
+        axs[1].axhline(
+            max_limits[j], color=f'{jc[j+1]}',
+            linestyle='--',
+            label=f'Joint {j+1} Max'
+        )
     axs[1].set_title(f'Arm Joint Angles ({sim_name})')
     axs[1].set_xlabel('Time Step')
     axs[1].set_ylabel('Angle [rad]')
@@ -200,6 +221,45 @@ sim_control_params = {
 }
 
 
+def create_new_state(
+        state,
+        V,
+        arm_config,
+        apply_joint_limits=False
+):
+    # robot speeds are 9x1 vector [wheel_speeds, arm_speeds]
+    robot_speeds = compute_robot_speeds(V, arm_config, [])
+    # Compute the next state using the current state and robot speeds
+    new_state = next_state(
+        robot_state=state,
+        robot_speeds=robot_speeds,
+        dt=0.01,
+        max_wheel_motor_speed=RC.max_wheel_motor_speed,  # [rad/s]
+        max_arm_motor_speed=RC.max_arm_motor_speed  # [rad/s]
+    )
+    if not apply_joint_limits:
+        return new_state
+
+    # Apply joint limits
+    new_arm_state = new_state[3:8]
+    exceeded_joint_limits = test_joint_limits(new_arm_state)
+    if any(exceeded_joint_limits):
+        # Create a list of violated joints by joint number (index+1)
+        violated_joints = [i for i, v in enumerate(exceeded_joint_limits) if v]
+        # Recalculate the robot speeds with violated joints set to 0
+        robot_speeds = compute_robot_speeds(V, arm_config, violated_joints)
+        # Recalculate the new state with the new robot speeds
+        limited_new_state = next_state(
+            robot_state=state,
+            robot_speeds=robot_speeds,
+            dt=0.01,
+            max_wheel_motor_speed=RC.max_wheel_motor_speed,  # [rad/s]
+            max_arm_motor_speed=RC.max_arm_motor_speed  # [rad/s]
+        )
+        return limited_new_state
+    return new_state
+
+
 def main(sim_name: str):
     # Save sys.stdout to a log file
     # Create the file and directory if it doesn't exist already
@@ -221,7 +281,8 @@ def main(sim_name: str):
         cube_final_config=T_cube_final,
         ee_grasping_config=ee_grasping_config,
         standoff_config=standoff_config,
-        num_reference_configs=1
+        num_reference_configs=1,
+        debug=False
     )
     # Convert trajectory to simulation states and save to file
     sim_traj = traj_to_sim_state(
@@ -257,36 +318,19 @@ def main(sim_name: str):
             X, Xd, Xd_next, Kp, Ki, control_type, dt=0.01
         )
         errors.append(X_err)
-        # robot speeds are 9x1 vector [wheel_speeds, arm_speeds]
-        robot_speeds = compute_robot_speeds(V, arm_config)
-        # Compute the next state using the current state and robot speeds
-        new_state = next_state(
-            robot_state=current_robot_state,
-            robot_speeds=robot_speeds,
-            dt=0.01,
-            max_wheel_motor_speed=RC.max_wheel_motor_speed,  # [rad/s]
-            max_arm_motor_speed=RC.max_arm_motor_speed  # [rad/s]
+        new_state = create_new_state(
+            current_robot_state, V, arm_config, apply_joint_limits=True
         )
-        new_arm_state = new_state[3:8]
-        exceeded_joint_limits = test_joint_limits(new_arm_state)
-        if any(exceeded_joint_limits):
-            # Create a list of violated joints by joint number (index+1)
-            violated_joints = [i+1 for i,
-                               v in enumerate(exceeded_joint_limits) if v]
-            # Recalculate the robot speeds with violated joints set to 0
-            robot_speeds = compute_robot_speeds(V, arm_config, violated_joints)
-            # Recalculate the new state with the new robot speeds
-            new_state = next_state(
-                robot_state=current_robot_state,
-                robot_speeds=robot_speeds,
-                dt=0.01,
-                max_wheel_motor_speed=RC.max_wheel_motor_speed,  # [rad/s]
-                max_arm_motor_speed=RC.max_arm_motor_speed  # [rad/s]
-            )
         # Add the gripper state to the new state
         gripper_state = sim_traj[i][-1]
         new_state = np.concatenate([new_state, [gripper_state]])
         robot_states.append(new_state)
+        if i % (N // 10) == 0:
+            log_file.close()
+            sys.stdout = sys.__stdout__
+            print(f'{i/N * 100:.1f}%')
+            log_file = open(f'results/{sim_name}/{sim_name}_log.txt', 'a')
+            sys.stdout = log_file
     print(
         f'Finished simulation with {len(robot_states)} states'
     )

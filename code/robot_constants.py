@@ -102,9 +102,9 @@ class RobotConstants:
         return [
             (-np.pi, np.pi),  # Joint 1
             (-np.pi, np.pi),  # Joint 2
-            (-np.pi, np.pi),  # Joint 3
-            (-np.pi, np.pi),  # Joint 4
-            (-np.pi, np.pi)  # Joint 5
+            (-2*np.pi, 2),  # Joint 3
+            (-2, 2*np.pi),  # Joint 4
+            (-2, 2)  # Joint 5
         ]
 
     def robot_config(self, T_se: np.array) -> np.array:

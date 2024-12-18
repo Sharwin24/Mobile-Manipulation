@@ -65,7 +65,7 @@ def test_joint_limits(arm_thetas: np.array) -> list[bool]:
     Returns:
         list[bool]: A list of 5 bools indicating if each joint is within its limits
     """
-    return [j_min < j < j_max for j, (j_min, j_max) in zip(arm_thetas, RC.joint_limits)]
+    return [j < j_min or j > j_max for j, (j_min, j_max) in zip(arm_thetas, RC.joint_limits)]
 
 
 def main():
