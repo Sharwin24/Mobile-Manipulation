@@ -39,8 +39,8 @@ ee_grasping_config = np.array([
 initial_chassis_config = np.array([np.deg2rad(30), 0.1, 0.2])
 # Arm Config: [theta1, theta2, theta3, theta4, theta5]
 initial_arm_config = np.array([0, -0.587, -0.9, 0, 0])
-assert not all(test_joint_limits(initial_arm_config)
-               ), 'Initial arm config is out of joint limits'
+assert all(test_joint_limits(initial_arm_config)
+           ), 'Initial arm config is out of joint limits'
 # Wheel Config: [thetaL1, thetaL2, thetaR1, thetaR2]
 initial_wheel_config = np.array([0, 0, 0, 0])
 # Gripper state: [0] for open, [1] for closed
@@ -242,10 +242,11 @@ def create_new_state(
 
     # Apply joint limits
     new_arm_state = new_state[3:8]
-    exceeded_joint_limits = test_joint_limits(new_arm_state)
-    if any(exceeded_joint_limits):
+    joints_within_limits = test_joint_limits(new_arm_state)
+    if not any(joints_within_limits):
         # Create a list of violated joints by joint number (index+1)
-        violated_joints = [i for i, v in enumerate(exceeded_joint_limits) if v]
+        violated_joints = [i for i, v in enumerate(
+            joints_within_limits) if not v]
         # Recalculate the robot speeds with violated joints set to 0
         robot_speeds = compute_robot_speeds(V, arm_config, violated_joints)
         # Recalculate the new state with the new robot speeds
