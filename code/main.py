@@ -73,34 +73,45 @@ def plot_error(errors, sim_name: str):
     plt.figure(figsize=(12, 8))
 
     # Full graph of error over time
-    plt.subplot(2, 1, 1)
-    plt.plot(errors[:, 0], label='w_x')
-    plt.plot(errors[:, 1], label='w_y')
-    plt.plot(errors[:, 2], label='w_z')
-    plt.plot(errors[:, 3], label='v_x')
-    plt.plot(errors[:, 4], label='v_y')
-    plt.plot(errors[:, 5], label='v_z')
-    plt.legend()
-    plt.title('Error Over Time')
-    plt.xlabel('Sim Steps')
-    # TODO: Units
-    plt.ylabel('Error')
-    plt.grid()
+    ax1 = plt.subplot(2, 1, 1)
+    ax1.set_title('Error Over Time')
+    ax1.plot(errors[:, 0], label='w_x', color='r')
+    ax1.plot(errors[:, 1], label='w_y', color='g')
+    ax1.plot(errors[:, 2], label='w_z', color='b')
+    ax1.legend(loc='upper left')
+    ax1.set_xlabel('Sim Steps')
+    ax1.set_ylabel('Angular Velocity Error [rad/s]')
+    ax1.grid()
+
+    ax2 = ax1.twinx()
+    ax2.plot(errors[:, 3], label='v_x', color='r', linestyle='--')
+    ax2.plot(errors[:, 4], label='v_y', color='g', linestyle='--')
+    ax2.plot(errors[:, 5], label='v_z', color='b', linestyle='--')
+    ax2.legend(loc='upper right')
+    ax2.set_ylabel('Linear Velocity Error [m/s]')
 
     # Zoomed in graph of error over time
-    zoomed_in_steps = int(len(errors) * 0.05)  # Some % of the steps
-    plt.subplot(2, 1, 2)
-    plt.plot(errors[:zoomed_in_steps, 0], label='w_x')
-    plt.plot(errors[:zoomed_in_steps, 1], label='w_y')
-    plt.plot(errors[:zoomed_in_steps, 2], label='w_z')
-    plt.plot(errors[:zoomed_in_steps, 3], label='v_x')
-    plt.plot(errors[:zoomed_in_steps, 4], label='v_y')
-    plt.plot(errors[:zoomed_in_steps, 5], label='v_z')
-    plt.legend()
-    plt.title('Error Over Time (Zoomed In)')
-    plt.xlabel('Sim Steps')
-    plt.ylabel('Error')
-    plt.grid()
+    zoom_steps = int(len(errors) * 0.15)  # Some % of the steps
+    ax3 = plt.subplot(2, 1, 2)
+    ax3.plot(errors[:zoom_steps, 0], label='w_x', color='r')
+    ax3.plot(errors[:zoom_steps, 1], label='w_y', color='g')
+    ax3.plot(errors[:zoom_steps, 2], label='w_z', color='b')
+    ax3.legend(loc='upper left')
+    ax3.set_title(f'Error Over Time (Zoomed In on first {
+                  zoom_steps / len(errors) * 100:.1f}%)')
+    ax3.set_xlabel('Sim Steps')
+    ax3.set_ylabel('Angular Velocity Error [rad/s]')
+    ax3.grid()
+
+    ax4 = ax3.twinx()
+    ax4.plot(errors[:zoom_steps, 3],
+             label='v_x', color='r', linestyle='--')
+    ax4.plot(errors[:zoom_steps, 4],
+             label='v_y', color='g', linestyle='--')
+    ax4.plot(errors[:zoom_steps, 5],
+             label='v_z', color='b', linestyle='--')
+    ax4.legend(loc='upper right')
+    ax4.set_ylabel('Linear Velocity Error [m/s]')
 
     plt.tight_layout()
     plt.savefig(f'results/{sim_name}/error_plot.png')

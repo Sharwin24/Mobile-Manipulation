@@ -1,15 +1,15 @@
 Starting simulation: best
-Generating Trajectory using a controller frequency of 100.0 Hz, with 1000 steps per segment and 10 total seconds:
-	Segment 1: 2.45 [s]
-	Segment 2: 0.05 [s]
-	Segment 3: 0.05 [s]
-	Segment 4: 2.45 [s]
-	Segment 5: 2.45 [s]
-	Segment 6: 0.05 [s]
-	Segment 7: 0.05 [s]
-	Segment 8: 2.45 [s]
+Generating Trajectory using a controller frequency of 100.0 Hz, with 125.0 avg steps per segment and 10 total seconds:
+	Segment 1: 2.4 [s]
+	Segment 2: 0.1 [s]
+	Segment 3: 0.1 [s]
+	Segment 4: 2.4 [s]
+	Segment 5: 2.4 [s]
+	Segment 6: 0.1 [s]
+	Segment 7: 0.1 [s]
+	Segment 8: 2.4 [s]
 Successfully generated trajectory
 Saved trajectory as simulation state to results/best/sim_trajectory.csv
-Finished simulation with 8000 states
+Finished simulation with 1000 states
 Combined error plot saved to results/best/error_plot.png
 Robot states plot saved to results/best/robot_states.png
