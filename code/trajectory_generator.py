@@ -99,14 +99,14 @@ def trajectory_generator(
     # the sum of the segments should equal the total time
     dt = 0.01  # [s]
     total_time = 10  # [s]
-    traj_1_time = 0.24 * total_time  # Initial -> Pick_Standoff
+    traj_1_time = 0.21 * total_time  # Initial -> Pick_Standoff
     traj_2_time = 0.01 * total_time  # Pick_Standoff -> Cube_Initial
-    traj_3_time = 0.01 * total_time  # Cube_Initial -> Gripper Closed
-    traj_4_time = 0.24 * total_time  # Gripper Closed -> Pick_Standoff
-    traj_5_time = 0.24 * total_time  # Pick_Standoff -> Place_Standoff
+    traj_3_time = 0.07 * total_time  # Cube_Initial -> Gripper Closed
+    traj_4_time = 0.21 * total_time  # Gripper Closed -> Pick_Standoff
+    traj_5_time = 0.21 * total_time  # Pick_Standoff -> Place_Standoff
     traj_6_time = 0.01 * total_time  # Place_Standoff -> Cube_Final
-    traj_7_time = 0.01 * total_time  # Cube_Final -> Gripper Open
-    traj_8_time = 0.24 * total_time  # Gripper Open -> Place_Standoff
+    traj_7_time = 0.07 * total_time  # Cube_Final -> Gripper Open
+    traj_8_time = 0.21 * total_time  # Gripper Open -> Place_Standoff
     trajectory_time = np.array([
         traj_1_time, traj_2_time, traj_3_time, traj_4_time,
         traj_5_time, traj_6_time, traj_7_time, traj_8_time
@@ -122,7 +122,7 @@ def trajectory_generator(
         f'Generating Trajectory using a controller frequency of {num_reference_configs / 0.01} Hz, ' +
         f'with {np.sum(np.array(traj_steps)) / len(traj_steps)} avg steps per segment and ' +
         f'{total_time} total seconds:\n' +
-        '\n'.join([f'\tSegment {i+1}: {t} [s]' for i,
+        '\n'.join([f'\tSegment {i+1}: {t*1000:.2f} [ms], {traj_steps[i]} steps' for i,
                    t in enumerate(trajectory_time)])
     )
     # Apply transformations for the waypoints we'll need

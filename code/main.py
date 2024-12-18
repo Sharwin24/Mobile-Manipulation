@@ -74,7 +74,7 @@ def plot_error(errors, sim_name: str):
 
     # Full graph of error over time
     ax1 = plt.subplot(2, 1, 1)
-    ax1.set_title('Error Over Time')
+    ax1.set_title(f'Error Over Time ({sim_name})')
     ax1.plot(errors[:, 0], label='w_x', color='r')
     ax1.plot(errors[:, 1], label='w_y', color='g')
     ax1.plot(errors[:, 2], label='w_z', color='b')
@@ -91,14 +91,16 @@ def plot_error(errors, sim_name: str):
     ax2.set_ylabel('Linear Velocity Error [m/s]')
 
     # Zoomed in graph of error over time
-    zoom_steps = int(len(errors) * 0.15)  # Some % of the steps
+    zoom_percent = 0.15  # Some % of the steps
+    zoom_steps = int(len(errors) * zoom_percent)
     ax3 = plt.subplot(2, 1, 2)
     ax3.plot(errors[:zoom_steps, 0], label='w_x', color='r')
     ax3.plot(errors[:zoom_steps, 1], label='w_y', color='g')
     ax3.plot(errors[:zoom_steps, 2], label='w_z', color='b')
     ax3.legend(loc='upper left')
-    ax3.set_title(f'Error Over Time (Zoomed In on first {
-                  zoom_steps / len(errors) * 100:.1f}%)')
+    ax3.set_title(
+        f'Error Over Time ({sim_name}) - first {zoom_percent * 100:.0f}%'
+    )
     ax3.set_xlabel('Sim Steps')
     ax3.set_ylabel('Angular Velocity Error [rad/s]')
     ax3.grid()
@@ -338,10 +340,8 @@ def main(sim_name: str):
         new_state = np.concatenate([new_state, [gripper_state]])
         robot_states.append(new_state)
         if i % (N // 8) == 0:
-            log_file.close()
             sys.stdout = sys.__stdout__
-            print(f'{i/N * 100:.1f}%')
-            log_file = open(f'results/{sim_name}/{sim_name}_log.txt', 'a')
+            print(f'Progress ({sim_name}): {i/N * 100:.1f}%', end='\r')
             sys.stdout = log_file
     print(
         f'Finished simulation with {len(robot_states)} states'
