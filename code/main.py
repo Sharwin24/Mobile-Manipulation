@@ -325,7 +325,7 @@ def main(sim_name: str):
         gripper_state = sim_traj[i][-1]
         new_state = np.concatenate([new_state, [gripper_state]])
         robot_states.append(new_state)
-        if i % (N // 10) == 0:
+        if i % (N // 8) == 0:
             log_file.close()
             sys.stdout = sys.__stdout__
             print(f'{i/N * 100:.1f}%')
