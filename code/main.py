@@ -150,8 +150,6 @@ def plot_robot_states(states, reference_states, sim_name: str):
     # Get joint limits for each joint and plot straight line
     min_limits = [jl[0] for jl in RC.joint_limits]
     max_limits = [jl[1] for jl in RC.joint_limits]
-    # min_limits = np.full((N, 5), min_limits)
-    # max_limits = np.full((N, 5), max_limits)
 
     # Actual T_se transformations
     actual_transformations = np.array(
