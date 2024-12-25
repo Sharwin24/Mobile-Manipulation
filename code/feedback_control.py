@@ -40,27 +40,34 @@ def feedback_control(X, Xd, Xd_next, Kp, Ki, control_type: str = 'FF+PI', dt: fl
     return V, X_err
 
 
-def compute_robot_speeds(V: np.array, arm_thetas: np.array) -> np.array:
+def compute_robot_speeds(V: np.array, arm_thetas: np.array, violated_joints: list[int] = []) -> np.array:
     """
     Compute the robot speeds given the twist and arm joint angles.
 
     Args:
         V (np.array): The twist applied to the robot
         arm_thetas (np.array): The arm joint angles [rad]
+        violated_joints (list[int], optional): The list of joints (by joint number) that break joint limits. Defaults to [].
 
     Returns:
         np.array: The robot speeds as [wheel_speeds, arm_speeds]
     """
-    return np.linalg.pinv(RC.Je(arm_thetas)) @ V
+    return np.linalg.pinv(RC.Je(arm_thetas, violated_joints)) @ V
 
 
-def test_joint_limits(joint_angles) -> np.array:
-    # Returns a list of bools indicating which joint limits are violated
-    # True if joint is within limits, False if joint is outside limits
-    return np.array(
-        [min_limit < joint < max_limit for joint,
-            (min_limit, max_limit) in zip(joint_angles, RC.joint_limits)]
-    )
+def test_joint_limits(arm_thetas: np.array) -> list[bool]:
+    """
+    Test if the given joint angles are within their joint limits (for each joint).
+
+    Each bool is True if that joint is within its limit
+
+    Args:
+        arm_thetas (np.array): The list of 5 arm joint angles [rad]
+
+    Returns:
+        list[bool]: A list of 5 bools indicating if each joint is within its limits
+    """
+    return [j_min < j < j_max for j, (j_min, j_max) in zip(arm_thetas, RC.joint_limits)]
 
 
 def main():
