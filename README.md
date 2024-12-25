@@ -1,4 +1,5 @@
-# ME449-Final-Project
+# Mobile Manipulation
+This project incorporates several robotics concepts to perform a pick and place task in simulation using a mecanum-wheeled mobile robot with a 5 degree-of-freedom robot arm.
 
 ## Running the Program
 To run the program and generate the trajectories, plots, and log files, run `python3 code/main.py` (if you're in the top level directory). The main function will initialize the robot at a configuration with some error as well as the cube's position (depending on the task). The reference trajectory will be generated and the controller along with the state function will be used to control the robot accordingly.
@@ -42,6 +43,8 @@ A figure showcasing the chassis trajectory and end-effector trajectory, as well 
 
 ### - sim_trajectory.csv
 The reference trajectory generated from `trajectory_generator` in a csv file. This isn't used since the reference trajectory is directly passed to the main loop in `main` in order to implement the controller. However, it lives here for debugging purposes.
+
+# Code Modules
 
 ## Robot Constants
 The `robot_constants.py` file details all the robot-related variables and offers transformation functions between the space frame and the robot's base/body/end-effector frames. The class is externalized with a global instance so only one object is referenced at a time in case the state is manipulated.
