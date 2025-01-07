@@ -94,7 +94,6 @@ class RobotConstants:
     def joint_limits(self) -> list[tuple[float, float]]:
         """
         The joint limits for each of the 5 arm joints [rad]
-        TODO: Update the joint limits with the actual values
 
         Returns:
             list[tuple[float, float]]: The min/max joint limits for the 5 arm joints [rad]
