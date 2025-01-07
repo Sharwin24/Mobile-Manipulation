@@ -133,6 +133,16 @@ class RobotConstants:
         return np.hstack((base_config, arm_config))
 
     def Je(self, arm_thetas: np.array, violated_joints: list[int] = []) -> np.array:
+        """
+        Compute the Mobile Manipulator Jacobian given the arm joint angles and the list of joints that break joint limits.
+
+        Args:
+            arm_thetas (np.array): The arm joint angles [rad]
+            violated_joints (list[int], optional): List of joints by ID that are out of joint limits. Defaults to [].
+
+        Returns:
+            np.array: The Mobile Manipulator Jacobian (6x9)
+        """
         # 6x5 Jacobian Matrix for the arm
         J_arm = mr.JacobianBody(self.B, arm_thetas)
         # If any joints are violated, set the corresponding column to 0
