@@ -26,7 +26,7 @@ Includes information about the type of controller, the feedback gains, and other
 #### - *sim_name*_log.txt
 A log file that captures all `stdout` output from running the simulation. Expect to see logs from generating the trajectories and files required for CoppeliaSim to run.
 
-#### - *sim_name_sim.mp4
+#### - *sim_name*_sim.mp4
 A video of the simulation in CoppeliaSim
 
 #### - error_plot.png
