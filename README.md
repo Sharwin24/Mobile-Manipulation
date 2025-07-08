@@ -1,6 +1,9 @@
 # Mobile Manipulation
 This project incorporates several robotics concepts to perform a pick and place task in simulation using a mecanum-wheeled mobile robot with a 5 degree-of-freedom robot arm.
 
+![image](https://github.com/user-attachments/assets/3aee45af-306e-44ba-932e-314277f1921d)
+
+
 ## Running the Program
 To run the program and generate the trajectories, plots, and log files, run `python3 code/main.py` (if you're in the top level directory). The main function will initialize the robot at a configuration with some error as well as the cube's position (depending on the task). The reference trajectory will be generated and the controller along with the state function will be used to control the robot accordingly.
 
