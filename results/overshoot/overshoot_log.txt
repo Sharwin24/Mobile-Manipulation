@@ -1,15 +1,15 @@
 Starting simulation: overshoot
-Generating Trajectory using a controller frequency of 100.0 Hz, with 1000 steps per segment and 10 total seconds:
-	Segment 1: 2.45 [s]
-	Segment 2: 0.05 [s]
-	Segment 3: 0.05 [s]
-	Segment 4: 2.45 [s]
-	Segment 5: 2.45 [s]
-	Segment 6: 0.05 [s]
-	Segment 7: 0.05 [s]
-	Segment 8: 2.45 [s]
+Generating Trajectory using a controller frequency of 100.0 Hz, with 125.0 avg steps per segment and 10 total seconds:
+	Segment 1: 2100.00 [ms], 210 steps
+	Segment 2: 100.00 [ms], 10 steps
+	Segment 3: 700.00 [ms], 70 steps
+	Segment 4: 2100.00 [ms], 210 steps
+	Segment 5: 2100.00 [ms], 210 steps
+	Segment 6: 100.00 [ms], 10 steps
+	Segment 7: 700.00 [ms], 70 steps
+	Segment 8: 2100.00 [ms], 210 steps
 Successfully generated trajectory
 Saved trajectory as simulation state to results/overshoot/sim_trajectory.csv
-Finished simulation with 8000 states
+Finished simulation with 1000 states
 Combined error plot saved to results/overshoot/error_plot.png
 Robot states plot saved to results/overshoot/robot_states.png
