@@ -1,7 +1,7 @@
 # Mobile Manipulation
 This project incorporates several robotics concepts to perform a pick and place task in simulation using a mecanum-wheeled mobile robot with a 5 degree-of-freedom robot arm.
 
-![image](https://github.com/user-attachments/assets/3aee45af-306e-44ba-932e-314277f1921d)
+![best_sim-ezgif com-crop](https://github.com/user-attachments/assets/d7c553b8-f9db-411b-94bf-32fada312cff)
 
 
 ## Running the Program
